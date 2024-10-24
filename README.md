@@ -1,0 +1,1 @@
+This is the source code for an in-development top-down survival game with the tentative title "Castle". It is written in a highly C-style C++ with no object-oriented features (unless by happenstance).
