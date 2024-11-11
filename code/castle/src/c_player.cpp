@@ -2,7 +2,7 @@
 
 c_player_ent::c_player_ent(c_sprite_batch_layer &sb_layer)
 {
-    m_sb_slot_key = sb_layer.take_any_available_slot(0);
+    m_sb_slot_key = sb_layer.take_any_available_slot({0, 0});
 }
 
 void c_player_ent::proc_movement(const c_input_manager &input_manager)

@@ -59,8 +59,8 @@ void c_game::run()
 
     std::cout << "Successfully initialised OpenGL function pointers!" << std::endl;
 
-    // Load assets.
-    if (!m_assets.load_from_file("assets.dat"))
+    // Load core assets.
+    if (!m_assets.load_core_group())
     {
         return;
     }

@@ -74,7 +74,7 @@ c_sprite_batch::~c_sprite_batch()
     glDeleteVertexArrays(1, &m_vert_array_gl_id);
 }
 
-int c_sprite_batch::take_any_available_slot(const int tex_id)
+int c_sprite_batch::take_any_available_slot(const s_asset_id tex_id)
 {
     // If there are no free/inactive slots, don't go any further.
     if (m_slot_activity.is_full())
@@ -209,7 +209,7 @@ void c_sprite_batch::release_slot(const int slot_index)
 
 void c_sprite_batch::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
 {
-    const int sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id(0);
+    const int sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id({0, 0});
 
     glUseProgram(sprite_quad_prog_gl_id);
 
@@ -240,7 +240,7 @@ void c_sprite_batch::render(const c_assets &assets, const cc::s_vec_2d_int windo
     glDrawElements(GL_TRIANGLES, 6 * k_slot_cnt, GL_UNSIGNED_SHORT, 0);
 }
 
-int c_sprite_batch::find_tex_unit_to_use(const int tex_id) const
+int c_sprite_batch::find_tex_unit_to_use(const s_asset_id tex_id) const
 {
     int free_tex_unit = -1;
 
@@ -261,7 +261,7 @@ int c_sprite_batch::find_tex_unit_to_use(const int tex_id) const
     return free_tex_unit;
 }
 
-s_sprite_batch_slot_key c_sprite_batch_layer::take_any_available_slot(const int tex_id)
+s_sprite_batch_slot_key c_sprite_batch_layer::take_any_available_slot(const s_asset_id tex_id)
 {
     s_sprite_batch_slot_key key;
 

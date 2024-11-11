@@ -34,7 +34,7 @@ public:
     c_sprite_batch();
     ~c_sprite_batch();
 
-    int take_any_available_slot(const int tex_id);
+    int take_any_available_slot(const s_asset_id tex_id);
     void write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets);
     void release_slot(const int slot_index);
 
@@ -58,10 +58,10 @@ private:
     int m_slot_tex_units[k_slot_cnt] = {}; // What texture unit each slot is mapped to.
 
     // NOTE: Consider bundling the below into a struct.
-    int m_tex_unit_tex_ids[k_tex_unit_limit] = {}; // What texture ID (the actual texture asset) each unit maps to.
+    s_asset_id m_tex_unit_tex_ids[k_tex_unit_limit] = {}; // What texture ID (the actual texture asset) each unit maps to.
     int m_tex_unit_ref_cnts[k_tex_unit_limit] = {}; // How many slots are mapped to each unit.
 
-    int find_tex_unit_to_use(const int tex_id) const;
+    int find_tex_unit_to_use(const s_asset_id tex_id) const;
 };
 
 struct s_sprite_batch_slot_key
@@ -73,7 +73,7 @@ struct s_sprite_batch_slot_key
 class c_sprite_batch_layer
 {
 public:
-    s_sprite_batch_slot_key take_any_available_slot(const int tex_id);
+    s_sprite_batch_slot_key take_any_available_slot(const s_asset_id tex_id);
 
     void render(const c_assets &assets, const cc::s_vec_2d_int window_size) const;
 

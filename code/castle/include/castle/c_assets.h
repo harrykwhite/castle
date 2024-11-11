@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <stdexcept>
 #include <filesystem>
 #include <memory>
@@ -7,84 +8,107 @@
 #include "c_utils.h"
 #include "c_modding.h"
 
+const std::string k_core_assets_file_name = "assets.dat";
 constexpr int k_asset_group_cnt = 1 + k_max_mod_cnt;
 
-class c_tex_data
+class c_asset_group
 {
 public:
-    c_tex_data() = default;
-    ~c_tex_data();
+    c_asset_group() = default;
+    ~c_asset_group();
 
-    void load_from_ifs(std::ifstream &ifs, const int tex_cnt);
-
+    void load_from_ifs(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt);
+    
     inline int get_tex_cnt() const
     {
         return m_tex_cnt;
     }
 
+    inline int get_shader_prog_cnt() const
+    {
+        return m_shader_prog_cnt;
+    }
+
     inline u_gl_id get_tex_gl_id(const int index) const
     {
         CC_CHECK(index >= 0 && index < m_tex_cnt);
-        return m_gl_ids[index];
+        return m_tex_gl_ids[index];
     }
 
     inline cc::s_vec_2d_int get_tex_size(const int index) const
     {
         CC_CHECK(index >= 0 && index < m_tex_cnt);
-        return m_sizes[index];
+        return m_tex_sizes[index];
+    }
+
+    inline u_gl_id get_shader_prog_gl_id(const int index) const
+    {
+        CC_CHECK(index >= 0 && index < m_shader_prog_cnt);
+        return m_shader_prog_gl_ids[index];
     }
 
 private:
     int m_tex_cnt = 0;
-    std::unique_ptr<u_gl_id[]> m_gl_ids;
-    std::unique_ptr<cc::s_vec_2d_int[]> m_sizes;
+    int m_shader_prog_cnt = 0;
+
+    std::unique_ptr<u_gl_id[]> m_tex_gl_ids;
+    std::unique_ptr<cc::s_vec_2d_int[]> m_tex_sizes;
+    
+    std::unique_ptr<u_gl_id[]> m_shader_prog_gl_ids;
 };
 
-class c_shader_prog_data
+struct s_asset_id
 {
-public:
-    c_shader_prog_data() = default;
-    ~c_shader_prog_data();
+    int group_index;
+    int asset_index;
 
-    void load_from_ifs(std::ifstream &ifs, const int prog_cnt);
-
-    inline int get_prog_cnt() const
+    bool operator==(const s_asset_id &other) const
     {
-        return m_prog_cnt;
+        return group_index == other.group_index && asset_index == other.asset_index;
     }
-
-    inline u_gl_id get_prog_gl_id(const int index) const
-    {
-        CC_CHECK(index >= 0 && index < m_prog_cnt);
-        return m_gl_ids[index];
-    }
-
-private:
-    int m_prog_cnt = 0;
-    std::unique_ptr<u_gl_id[]> m_gl_ids;
 };
 
 class c_assets
 {
 public:
-    bool load_from_file(const std::string &filename);
-
-    inline u_gl_id get_tex_gl_id(const int index) const
+    bool load_core_group();
+    
+    inline void load_mod_group_from_ifs(const int group_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
     {
-        return m_tex_data.get_tex_gl_id(index);
+        CC_CHECK(group_index >= 0 && group_index < k_asset_group_cnt);
+        m_groups[group_index].load_from_ifs(ifs, tex_cnt, shader_prog_cnt);
     }
 
-    inline cc::s_vec_2d_int get_tex_size(const int index) const
+    inline int get_group_tex_cnt(const int index) const
     {
-        return m_tex_data.get_tex_size(index);
+        CC_CHECK(index >= 0 && index < k_asset_group_cnt);
+        return m_groups[index].get_tex_cnt();
     }
 
-    inline u_gl_id get_shader_prog_gl_id(const int index) const
+    inline int get_group_shader_prog_cnt(const int index) const
     {
-        return m_shader_prog_data.get_prog_gl_id(index);
+        CC_CHECK(index >= 0 && index < k_asset_group_cnt);
+        return m_groups[index].get_shader_prog_cnt();
+    }
+
+    inline u_gl_id get_tex_gl_id(const s_asset_id &id) const
+    {
+        CC_CHECK(id.group_index >= 0 && id.group_index < k_asset_group_cnt);
+        return m_groups[id.group_index].get_tex_gl_id(id.asset_index);
+    }
+
+    inline cc::s_vec_2d_int get_tex_size(const s_asset_id &id) const
+    {
+        CC_CHECK(id.group_index >= 0 && id.group_index < k_asset_group_cnt);
+        return m_groups[id.group_index].get_tex_size(id.asset_index);
+    }
+
+    inline u_gl_id get_shader_prog_gl_id(const s_asset_id &id) const
+    {
+        CC_CHECK(id.group_index >= 0 && id.group_index < k_asset_group_cnt);
+        return m_groups[id.group_index].get_shader_prog_gl_id(id.asset_index);
     }
 
 private:
-    c_tex_data m_tex_data;
-    c_shader_prog_data m_shader_prog_data;
+    c_asset_group m_groups[k_asset_group_cnt];
 };

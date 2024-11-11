@@ -1,5 +1,2 @@
 build/
-code/castle_engine/src/ce_rendering.h
-code/castle_engine/src/ce_utils.h
-code/castle_engine/src/ce_rendering.cpp
-code/castle_engine/src/ce_utils.cpp
+deprecated/

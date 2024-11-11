@@ -4,54 +4,53 @@
 #include <castle_common/cc_assets.h>
 #include <castle_common/cc_misc.h>
 
-c_tex_data::~c_tex_data()
+c_asset_group::~c_asset_group()
 {
-    glDeleteTextures(m_tex_cnt, m_gl_ids.get());
+    for (int i = 0; i < m_shader_prog_cnt; ++i)
+    {
+        glDeleteProgram(m_shader_prog_gl_ids[i]);
+    }
+
+    glDeleteTextures(m_tex_cnt, m_tex_gl_ids.get());
 }
 
-void c_tex_data::load_from_ifs(std::ifstream &ifs, const int tex_cnt)
+void c_asset_group::load_from_ifs(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
 {
+    //
+    // Textures
+    //
     m_tex_cnt = tex_cnt;
 
     // Generate OpenGL textures and store their IDs.
-    m_gl_ids = std::make_unique<u_gl_id[]>(tex_cnt);
-    glGenTextures(tex_cnt, m_gl_ids.get());
+    m_tex_gl_ids = std::make_unique<u_gl_id[]>(tex_cnt);
+    glGenTextures(tex_cnt, m_tex_gl_ids.get());
 
     // Allocate a pixel data buffer, to be used as working space to store the pixel data for each texture.
     const int px_data_buf_size = cc::k_tex_channel_cnt * cc::k_tex_size_limit.x * cc::k_tex_size_limit.y;
     const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size);
 
     // Read the sizes and pixel data of textures and finish setting them up.
-    m_sizes = std::make_unique<cc::s_vec_2d_int[]>(tex_cnt);
+    m_tex_sizes = std::make_unique<cc::s_vec_2d_int[]>(tex_cnt);
 
     for (int i = 0; i < tex_cnt; ++i)
     {
-        ifs.read(reinterpret_cast<char *>(&m_sizes[i]), sizeof(cc::s_vec_2d_int));
+        ifs.read(reinterpret_cast<char *>(&m_tex_sizes[i]), sizeof(cc::s_vec_2d_int));
 
-        ifs.read(reinterpret_cast<char *>(px_data_buf.get()), cc::k_tex_channel_cnt * m_sizes[i].x * m_sizes[i].y);
+        ifs.read(reinterpret_cast<char *>(px_data_buf.get()), cc::k_tex_channel_cnt * m_tex_sizes[i].x * m_tex_sizes[i].y);
 
-        glBindTexture(GL_TEXTURE_2D, m_gl_ids[i]);
+        glBindTexture(GL_TEXTURE_2D, m_tex_gl_ids[i]);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_sizes[i].x, m_sizes[i].y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_tex_sizes[i].x, m_tex_sizes[i].y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
     }
-}
 
-c_shader_prog_data::~c_shader_prog_data()
-{
-    for (int i = 0; i < m_prog_cnt; ++i)
-    {
-        glDeleteProgram(m_gl_ids[i]);
-    }
-}
+    //
+    // Shader Programs
+    //
+    m_shader_prog_cnt = shader_prog_cnt;
+    m_shader_prog_gl_ids = std::make_unique<u_gl_id[]>(shader_prog_cnt);
 
-void c_shader_prog_data::load_from_ifs(std::ifstream &ifs, const int prog_cnt)
-{
-    m_prog_cnt = prog_cnt;
-
-    m_gl_ids = std::make_unique<u_gl_id[]>(prog_cnt);
-
-    for (int i = 0; i < prog_cnt; ++i)
+    for (int i = 0; i < shader_prog_cnt; ++i)
     {
         // Create the shaders using the sources in the file.
         const u_gl_id shader_gl_ids[2] = {
@@ -94,14 +93,14 @@ void c_shader_prog_data::load_from_ifs(std::ifstream &ifs, const int prog_cnt)
         }
 
         // Create the shader program using the shaders.
-        m_gl_ids[i] = glCreateProgram();
+        m_shader_prog_gl_ids[i] = glCreateProgram();
 
         for (int j = 0; j < CC_STATIC_ARRAY_LEN(shader_gl_ids); ++j)
         {
-            glAttachShader(m_gl_ids[i], shader_gl_ids[j]);
+            glAttachShader(m_shader_prog_gl_ids[i], shader_gl_ids[j]);
         }
 
-        glLinkProgram(m_gl_ids[i]);
+        glLinkProgram(m_shader_prog_gl_ids[i]);
 
         // Delete the shaders as they're no longer needed.
         for (int j = CC_STATIC_ARRAY_LEN(shader_gl_ids) - 1; j >= 0; --j)
@@ -111,18 +110,18 @@ void c_shader_prog_data::load_from_ifs(std::ifstream &ifs, const int prog_cnt)
     }
 }
 
-bool c_assets::load_from_file(const std::string &filename)
+bool c_assets::load_core_group()
 {
     // Open the asset file.
-    std::ifstream ifs(filename, std::ios::binary);
+    std::ifstream ifs(k_core_assets_file_name, std::ios::binary);
 
     if (!ifs.is_open())
     {
-        std::cout << "ERROR: Failed to open \"" << filename << "\"!" << std::endl;
+        std::cout << "ERROR: Failed to open \"" << k_core_assets_file_name << "\"!" << std::endl;
         return false;
     }
 
-    // Read the file header.
+    // Read the file header and get asset counts.
     int tex_cnt;
     ifs.read(reinterpret_cast<char *>(&tex_cnt), sizeof(tex_cnt));
 
@@ -130,8 +129,7 @@ bool c_assets::load_from_file(const std::string &filename)
     ifs.read(reinterpret_cast<char *>(&shader_prog_cnt), sizeof(shader_prog_cnt));
 
     // Load asset data.
-    m_tex_data.load_from_ifs(ifs, tex_cnt);
-    m_shader_prog_data.load_from_ifs(ifs, shader_prog_cnt);
+    m_groups[0].load_from_ifs(ifs, tex_cnt, shader_prog_cnt);
 
     ifs.close();
 
