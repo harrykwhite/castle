@@ -4,6 +4,11 @@
 #include <castle/c_input.h>
 #include <castle/player.h>
 
+static void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
+{
+    glViewport(0, 0, width, height);
+}
+
 c_game::~c_game()
 {
     if (m_glfw_initialized)
@@ -51,6 +56,9 @@ void c_game::run()
 
     std::cout << "Successfully created a GLFW window!" << std::endl;
 
+    // Set GLFW window callbacks.
+    glfwSetWindowSizeCallback(m_glfw_window, glfw_window_size_callback);
+
     // Initialise OpenGL function pointers.
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
@@ -59,6 +67,10 @@ void c_game::run()
 
     std::cout << "Successfully initialised OpenGL function pointers!" << std::endl;
 
+    // Enable blending.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Load core assets.
     if (!m_assets.load_core_group())
     {
@@ -66,17 +78,13 @@ void c_game::run()
     }
 
     std::cout << "Successfully loaded game assets!" << std::endl;
-
-    // Enable blending.
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    
     //
     c_player_ent player_ent(m_sprite_batch_layers.emplace_back());
 
     // Show the window now that things have been set up.
     glfwShowWindow(m_glfw_window);
-    
+
     //
     // Main Loop
     //
