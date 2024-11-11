@@ -209,7 +209,7 @@ void c_sprite_batch::release_slot(const int slot_index)
 
 void c_sprite_batch::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
 {
-    const int sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id({0, 0});
+    const int sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::make_core_shader_prog_id(ec_core_shader_prog::sprite_quad));
 
     glUseProgram(sprite_quad_prog_gl_id);
 

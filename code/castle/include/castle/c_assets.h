@@ -11,6 +11,18 @@
 const std::string k_core_assets_file_name = "assets.dat";
 constexpr int k_asset_group_cnt = 1 + k_max_mod_cnt;
 
+enum class ec_core_tex
+{
+    player,
+    dirt_tile,
+    stone_tile
+};
+
+enum class ec_core_shader_prog
+{
+    sprite_quad
+};
+
 class c_asset_group
 {
 public:
@@ -61,6 +73,16 @@ struct s_asset_id
 {
     int group_index;
     int asset_index;
+
+    static s_asset_id make_core_tex_id(const ec_core_tex tex)
+    {
+        return {0, static_cast<int>(tex)};
+    }
+
+    static s_asset_id make_core_shader_prog_id(const ec_core_shader_prog prog)
+    {
+        return {0, static_cast<int>(prog)};
+    }
 
     bool operator==(const s_asset_id &other) const
     {
