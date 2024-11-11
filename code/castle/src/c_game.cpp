@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <castle/c_input.h>
-#include <castle/player.h>
+#include <castle/c_player.h>
 
 static void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
 {

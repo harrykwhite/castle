@@ -1,4 +1,4 @@
-#include <castle/player.h>
+#include <castle/c_player.h>
 
 c_player_ent::c_player_ent(c_sprite_batch_layer &sb_layer)
 {
