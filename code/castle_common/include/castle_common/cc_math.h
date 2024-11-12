@@ -196,4 +196,30 @@ struct s_rect
     }
 };
 
+struct s_rect_float
+{
+    float x, y;
+    float width, height;
+
+    inline float get_right() const
+    {
+        return x + width;
+    }
+
+    inline float get_bottom() const
+    {
+        return y + height;
+    }
+
+    bool operator==(const s_rect_float &other) const
+    {
+        return x == other.x && y == other.y && width == other.width && height == other.height;
+    }
+
+    bool operator!=(const s_rect_float &other) const
+    {
+        return !(*this == other);
+    }
+};
+
 }
