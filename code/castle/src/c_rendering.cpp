@@ -188,6 +188,17 @@ void c_sprite_batch::write_to_slot(const int slot_index, const s_sprite_batch_sl
     glBufferSubData(GL_ARRAY_BUFFER, slot_index * sizeof(verts), sizeof(verts), verts);
 }
 
+void c_sprite_batch::clear_slot(const int slot_index)
+{
+    CC_CHECK(slot_index >= 0 && slot_index < k_slot_cnt);
+
+    glBindVertexArray(m_vert_array_gl_id);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vert_buf_gl_id);
+
+    const float verts[k_sprite_quad_shader_prog_vert_cnt * 4] = {};
+    glBufferSubData(GL_ARRAY_BUFFER, slot_index * sizeof(verts), sizeof(verts), verts);
+}
+
 void c_sprite_batch::release_slot(const int slot_index)
 {
     CC_CHECK(slot_index >= 0 && slot_index < k_slot_cnt);

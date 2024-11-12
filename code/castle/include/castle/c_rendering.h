@@ -36,6 +36,7 @@ public:
 
     int take_any_available_slot(const s_asset_id tex_id);
     void write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets);
+    void clear_slot(const int slot_index);
     void release_slot(const int slot_index);
 
     void render(const c_assets &assets, const cc::s_vec_2d_int window_size) const;
@@ -80,6 +81,11 @@ public:
     inline void write_to_slot(const s_sprite_batch_slot_key key, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets)
     {
         m_batches[key.batch_index].write_to_slot(key.slot_index, write_data, assets);
+    }
+
+    inline void clear_slot(const s_sprite_batch_slot_key key)
+    {
+        m_batches[key.batch_index].clear_slot(key.slot_index);
     }
 
     inline void release_slot(const s_sprite_batch_slot_key key)
