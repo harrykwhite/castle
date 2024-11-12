@@ -10,8 +10,10 @@ template<int BIT_CNT>
 class c_bitset
 {
 public:
+    void clear();
     int get_first_inactive_bit_index() const; // Returns -1 if not found.
     bool is_full() const;
+    bool is_empty() const;
 
     inline bool is_bit_active(const int bit_index) const
     {
@@ -36,6 +38,15 @@ private:
 };
 
 template<int BIT_CNT>
+inline void c_bitset<BIT_CNT>::clear()
+{
+    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
+    {
+        m_bytes[i] = 0x00;
+    }
+}
+
+template<int BIT_CNT>
 inline int c_bitset<BIT_CNT>::get_first_inactive_bit_index() const
 {
     for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
@@ -49,7 +60,7 @@ inline int c_bitset<BIT_CNT>::get_first_inactive_bit_index() const
         {
             if (!(m_bytes[i] & (1 << j)))
             {
-                return i;
+                return (i * 8) + j;
             }
         }
     }
@@ -63,6 +74,20 @@ inline bool c_bitset<BIT_CNT>::is_full() const
     for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
     {
         if (m_bytes[i] != 0xFF)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template<int BIT_CNT>
+inline bool c_bitset<BIT_CNT>::is_empty() const
+{
+    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
+    {
+        if (m_bytes[i] != 0x00)
         {
             return false;
         }

@@ -23,6 +23,9 @@ add_executable(castle
 	src/c_player.cpp
 	include/castle/c_player.h
 
+	src/c_tilemap.cpp
+	include/castle/c_tilemap.h
+
 	src/c_utils.cpp
 	include/castle/c_utils.h
 	

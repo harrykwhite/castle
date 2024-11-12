@@ -185,6 +185,11 @@ struct s_rect
         return y + height;
     }
 
+    inline bool intersects(const s_rect &other) const
+    {
+        return get_right() > other.x && other.get_right() > x && get_bottom() > other.y && other.get_bottom() > y;
+    }
+
     bool operator==(const s_rect &other) const
     {
         return x == other.x && y == other.y && width == other.width && height == other.height;
@@ -209,6 +214,11 @@ struct s_rect_float
     inline float get_bottom() const
     {
         return y + height;
+    }
+
+    inline bool intersects(const s_rect_float &other) const
+    {
+        return get_right() > other.x && other.get_right() > x && get_bottom() > other.y && other.get_bottom() > y;
     }
 
     bool operator==(const s_rect_float &other) const

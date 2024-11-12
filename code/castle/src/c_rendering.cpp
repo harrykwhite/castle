@@ -110,7 +110,7 @@ int c_sprite_batch::take_any_available_slot(const s_asset_id tex_id)
     ++m_tex_unit_ref_cnts[tex_unit];
     m_tex_unit_tex_ids[tex_unit] = tex_id;
     m_slot_tex_units[slot_index] = tex_unit;
-
+    
     return slot_index;
 }
 

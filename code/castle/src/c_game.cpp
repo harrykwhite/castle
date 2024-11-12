@@ -78,9 +78,20 @@ void c_game::run()
     }
 
     std::cout << "Successfully loaded game assets!" << std::endl;
-    
-    //
-    c_player_ent player_ent(m_sprite_batch_layers.emplace_back());
+
+    // TEMP
+    const int player_sb_layer_index = 0;
+    const int tilemap_sb_layer_index = 1;
+
+    m_sprite_batch_layers.emplace_back();
+    m_sprite_batch_layers.emplace_back();
+
+    c_player_ent player_ent(m_sprite_batch_layers[player_sb_layer_index]);
+
+    c_tilemap tilemap(m_sprite_batch_layers[tilemap_sb_layer_index]);
+    tilemap.place_tile(2, 2);
+    tilemap.place_tile(3, 3);
+    tilemap.place_tile(5, 4);
 
     // Show the window now that things have been set up.
     glfwShowWindow(m_glfw_window);
@@ -115,8 +126,10 @@ void c_game::run()
 
                 do
                 {
-                    player_ent.proc_movement(input_manager);
+                    player_ent.proc_movement(input_manager, tilemap, m_assets);
                     player_ent.rewrite_render_data(m_sprite_batch_layers[0], m_assets);
+
+                    tilemap.rewrite_tiles(m_sprite_batch_layers[1], m_assets);
 
                     frame_dur_accum -= k_targ_tick_dur;
 
