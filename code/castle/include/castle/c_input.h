@@ -128,17 +128,22 @@ class c_input_state
 public:
     void refresh(GLFWwindow *const glfw_window);
 
-    u_keys_down_bits get_keys_down_bits() const
+    inline u_keys_down_bits get_keys_down_bits() const
     {
         return m_keys_down_bits;
     }
 
-    u_mouse_buttons_down_bits get_mouse_buttons_down_bits() const
+    inline cc::s_vec_2d get_mouse_pos() const
+    {
+        return m_mouse_pos;
+    }
+
+    inline u_mouse_buttons_down_bits get_mouse_buttons_down_bits() const
     {
         return m_mouse_buttons_down_bits;
     }
 
-    u_gamepad_buttons_down_bits get_gamepad_buttons_down_bits() const
+    inline u_gamepad_buttons_down_bits get_gamepad_buttons_down_bits() const
     {
         return m_gamepad_buttons_down_bits;
     }
@@ -173,6 +178,11 @@ public:
     inline bool is_key_released(const ec_key_code key_code) const
     {
         return !is_key_down(key_code) && ((m_input_state_last.get_keys_down_bits() & (static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code))) != 0);
+    }
+
+    inline cc::s_vec_2d get_mouse_pos() const
+    {
+        return m_input_state.get_mouse_pos();
     }
 
     inline bool is_mouse_button_down(const ec_mouse_button_code button_code) const

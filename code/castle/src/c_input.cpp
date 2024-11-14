@@ -95,6 +95,10 @@ void c_input_state::refresh(GLFWwindow *const glfw_window)
     //
     // Mouse
     //
+    double mouse_x_dbl, mouse_y_dbl;
+    glfwGetCursorPos(glfw_window, &mouse_x_dbl, &mouse_y_dbl);
+    m_mouse_pos = {static_cast<float>(mouse_x_dbl), static_cast<float>(mouse_y_dbl)};
+
     m_mouse_buttons_down_bits = 0;
 
     for (int i = 0; i < k_mouse_button_code_cnt; ++i)

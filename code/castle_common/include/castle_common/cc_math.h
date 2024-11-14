@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 namespace cc
 {
 
@@ -231,5 +233,10 @@ struct s_rect_float
         return !(*this == other);
     }
 };
+
+inline float get_dir(const s_vec_2d src, const s_vec_2d dest)
+{
+    return std::atan2f(src.y - dest.y, dest.x - src.x);
+}
 
 }

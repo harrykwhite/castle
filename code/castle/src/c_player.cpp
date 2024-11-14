@@ -17,16 +17,23 @@ void c_player_ent::proc_movement(const c_input_manager &input_manager, const c_t
     proc_hor_and_ver_tile_collisions(tilemap, assets);
 
     m_pos += m_vel;
+
+    const cc::s_vec_2d_int tex_size = assets.get_tex_size(k_player_tex_id);
+
+    m_rot = cc::get_dir(m_pos, input_manager.get_mouse_pos());
 }
 
 void c_player_ent::rewrite_render_data(const c_renderer &renderer, const c_assets &assets)
 {
+    const cc::s_vec_2d_int tex_size = assets.get_tex_size(k_player_tex_id);
+
     s_sprite_batch_slot_write_data write_data = {};
     write_data.pos = m_pos;
+    write_data.rot = m_rot;
     write_data.scale = {1.0f, 1.0f};
     write_data.origin = {0.5f, 0.5f};
-    write_data.src_rect.width = 32.0f;
-    write_data.src_rect.height = 32.0f;
+    write_data.src_rect.width = tex_size.x;
+    write_data.src_rect.height = tex_size.y;
     write_data.blend = s_color::make_white();
 
     renderer.write_to_sprite_batch_slot(m_sb_slot_key, write_data, assets);

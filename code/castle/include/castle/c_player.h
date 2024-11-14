@@ -29,5 +29,7 @@ private:
     cc::s_vec_2d m_pos = {};
     cc::s_vec_2d m_vel = {};
 
+    float m_rot = 0.0f;
+
     void proc_hor_and_ver_tile_collisions(const c_tilemap &tilemap, const c_assets &assets);
 };
