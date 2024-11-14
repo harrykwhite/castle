@@ -12,10 +12,10 @@ constexpr float k_player_move_spd = 2.0f;
 class c_player_ent
 {
 public:
-    c_player_ent(c_sprite_batch_layer &sb_layer);
+    c_player_ent(c_renderer &renderer);
 
     void proc_movement(const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets);
-    void rewrite_render_data(c_sprite_batch_layer &sb_layer, const c_assets &assets);
+    void rewrite_render_data(const c_renderer &renderer, const c_assets &assets);
 
     inline cc::s_rect_float get_collider(const c_assets &assets, const cc::s_vec_2d offs = {}) const
     {

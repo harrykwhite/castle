@@ -1,8 +1,8 @@
 #include <castle/c_player.h>
 
-c_player_ent::c_player_ent(c_sprite_batch_layer &sb_layer)
+c_player_ent::c_player_ent(c_renderer &renderer)
 {
-    m_sb_slot_key = sb_layer.take_any_available_slot(s_asset_id::make_core_tex_id(ec_core_tex::player));
+    m_sb_slot_key = renderer.take_any_available_sprite_batch_slot(0, s_asset_id::make_core_tex_id(ec_core_tex::player));
 }
 
 void c_player_ent::proc_movement(const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets)
@@ -19,7 +19,7 @@ void c_player_ent::proc_movement(const c_input_manager &input_manager, const c_t
     m_pos += m_vel;
 }
 
-void c_player_ent::rewrite_render_data(c_sprite_batch_layer &sb_layer, const c_assets &assets)
+void c_player_ent::rewrite_render_data(const c_renderer &renderer, const c_assets &assets)
 {
     s_sprite_batch_slot_write_data write_data = {};
     write_data.pos = m_pos;
@@ -29,7 +29,7 @@ void c_player_ent::rewrite_render_data(c_sprite_batch_layer &sb_layer, const c_a
     write_data.src_rect.height = 32.0f;
     write_data.blend = s_color::make_white();
 
-    sb_layer.write_to_slot(m_sb_slot_key, write_data, assets);
+    renderer.write_to_sprite_batch_slot(m_sb_slot_key, write_data, assets);
 }
 
 void c_player_ent::proc_hor_and_ver_tile_collisions(const c_tilemap &tilemap, const c_assets &assets)

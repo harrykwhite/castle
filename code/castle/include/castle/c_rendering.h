@@ -3,6 +3,7 @@
 #include <castle_common/cc_math.h>
 #include "c_assets.h"
 #include "c_utils.h"
+#include <stack>
 
 struct s_color
 {
@@ -16,6 +17,13 @@ struct s_color
     static constexpr s_color make_magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
 
     float r, g, b, a;
+};
+
+struct s_sprite_batch_slot_key
+{
+    int layer_index;
+    int batch_index;
+    int slot_index;
 };
 
 struct s_sprite_batch_slot_write_data // NOTE: Consider removing this; parameters might be simpler.
@@ -35,8 +43,8 @@ public:
     ~c_sprite_batch();
 
     int take_any_available_slot(const s_asset_id tex_id);
-    void write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets);
-    void clear_slot(const int slot_index);
+    void write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const;
+    void clear_slot(const int slot_index) const;
     void release_slot(const int slot_index);
 
     void render(const c_assets &assets, const cc::s_vec_2d_int window_size) const;
@@ -65,36 +73,67 @@ private:
     int find_tex_unit_to_use(const s_asset_id tex_id) const;
 };
 
-struct s_sprite_batch_slot_key
-{
-    int batch_index;
-    int slot_index;
-};
-
 class c_sprite_batch_layer
 {
 public:
-    s_sprite_batch_slot_key take_any_available_slot(const s_asset_id tex_id);
-
     void render(const c_assets &assets, const cc::s_vec_2d_int window_size) const;
+    void take_any_available_slot(const s_asset_id tex_id, int &batch_index, int &slot_index);
 
-    inline void write_to_slot(const s_sprite_batch_slot_key key, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets)
+    inline void write_to_slot(const int batch_index, const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const
     {
-        m_batches[key.batch_index].write_to_slot(key.slot_index, write_data, assets);
+        m_batches[batch_index].write_to_slot(slot_index, write_data, assets);
     }
 
-    inline void clear_slot(const s_sprite_batch_slot_key key)
+    inline void clear_slot(const int batch_index, const int slot_index) const
     {
-        m_batches[key.batch_index].clear_slot(key.slot_index);
+        m_batches[batch_index].clear_slot(slot_index);
     }
 
-    inline void release_slot(const s_sprite_batch_slot_key key)
+    inline void release_slot(const int batch_index, const int slot_index)
     {
-        m_batches[key.batch_index].release_slot(key.slot_index);
+        m_batches[batch_index].release_slot(slot_index);
     }
 
 private:
     std::vector<c_sprite_batch> m_batches;
+};
+
+class c_renderer
+{
+public:
+    void render(const c_assets &assets, const cc::s_vec_2d_int window_size);
+
+    inline s_sprite_batch_slot_key take_any_available_sprite_batch_slot(const int layer_index, const s_asset_id tex_id)
+    {
+        s_sprite_batch_slot_key key;
+        m_sprite_batch_layers[layer_index].take_any_available_slot(tex_id, key.batch_index, key.slot_index);
+        key.layer_index = layer_index;
+        return key;
+    }
+
+    inline void reset_sprite_batch_layers(const int new_cnt)
+    {
+        m_sprite_batch_layers.clear();
+        m_sprite_batch_layers.resize(new_cnt);
+    }
+
+    inline void write_to_sprite_batch_slot(const s_sprite_batch_slot_key &key, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const
+    {
+        m_sprite_batch_layers[key.layer_index].write_to_slot(key.batch_index, key.slot_index, write_data, assets);
+    }
+
+    inline void clear_sprite_batch_slot(const s_sprite_batch_slot_key &key) const
+    {
+        m_sprite_batch_layers[key.layer_index].clear_slot(key.batch_index, key.slot_index);
+    }
+
+    inline void release_sprite_batch_slot(const s_sprite_batch_slot_key &key)
+    {
+        m_sprite_batch_layers[key.layer_index].release_slot(key.batch_index, key.slot_index);
+    }
+
+private:
+    std::vector<c_sprite_batch_layer> m_sprite_batch_layers;
 };
 
 constexpr int k_sprite_quad_shader_prog_vert_cnt = 14;

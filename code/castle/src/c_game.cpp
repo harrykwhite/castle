@@ -80,15 +80,11 @@ void c_game::run()
     std::cout << "Successfully loaded game assets!" << std::endl;
 
     // TEMP
-    const int player_sb_layer_index = 0;
-    const int tilemap_sb_layer_index = 1;
+    m_renderer.reset_sprite_batch_layers(2);
 
-    m_sprite_batch_layers.emplace_back();
-    m_sprite_batch_layers.emplace_back();
+    c_player_ent player_ent(m_renderer);
 
-    c_player_ent player_ent(m_sprite_batch_layers[player_sb_layer_index]);
-
-    c_tilemap tilemap(m_sprite_batch_layers[tilemap_sb_layer_index]);
+    c_tilemap tilemap(m_renderer);
     tilemap.place_tile(2, 2);
     tilemap.place_tile(3, 3);
     tilemap.place_tile(5, 4);
@@ -127,9 +123,9 @@ void c_game::run()
                 do
                 {
                     player_ent.proc_movement(input_manager, tilemap, m_assets);
-                    player_ent.rewrite_render_data(m_sprite_batch_layers[0], m_assets);
+                    player_ent.rewrite_render_data(m_renderer, m_assets);
 
-                    tilemap.rewrite_tiles(m_sprite_batch_layers[1], m_assets);
+                    tilemap.rewrite_render_data(m_renderer, m_assets);
 
                     frame_dur_accum -= k_targ_tick_dur;
 
@@ -141,16 +137,10 @@ void c_game::run()
             // Render.
             glfwSwapBuffers(m_glfw_window);
 
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-
             cc::s_vec_2d_int window_size;
             glfwGetWindowSize(m_glfw_window, &window_size.x, &window_size.y);
 
-            for (const auto &batch_layer : m_sprite_batch_layers)
-            {
-                batch_layer.render(m_assets, window_size);
-            }
+            m_renderer.render(m_assets, window_size);
         }
     }
 }

@@ -1,5 +1,6 @@
 #include <castle/c_rendering.h>
 
+#include <assert.h>
 #include <castle/c_assets.h>
 #include <castle_common/cc_misc.h>
 
@@ -110,11 +111,11 @@ int c_sprite_batch::take_any_available_slot(const s_asset_id tex_id)
     ++m_tex_unit_ref_cnts[tex_unit];
     m_tex_unit_tex_ids[tex_unit] = tex_id;
     m_slot_tex_units[slot_index] = tex_unit;
-    
+
     return slot_index;
 }
 
-void c_sprite_batch::write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets)
+void c_sprite_batch::write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const
 {
     CC_CHECK(slot_index >= 0 && slot_index < k_slot_cnt);
 
@@ -188,7 +189,7 @@ void c_sprite_batch::write_to_slot(const int slot_index, const s_sprite_batch_sl
     glBufferSubData(GL_ARRAY_BUFFER, slot_index * sizeof(verts), sizeof(verts), verts);
 }
 
-void c_sprite_batch::clear_slot(const int slot_index)
+void c_sprite_batch::clear_slot(const int slot_index) const
 {
     CC_CHECK(slot_index >= 0 && slot_index < k_slot_cnt);
 
@@ -210,12 +211,8 @@ void c_sprite_batch::release_slot(const int slot_index)
     const int tex_unit = m_slot_tex_units[slot_index];
     --m_tex_unit_ref_cnts[tex_unit];
 
-    // Clear the vertex data.
-    glBindVertexArray(m_vert_array_gl_id);
-    glBindBuffer(GL_ARRAY_BUFFER, m_vert_buf_gl_id);
-
-    const float verts[k_sprite_quad_shader_prog_vert_cnt * 4] = {};
-    glBufferSubData(GL_ARRAY_BUFFER, slot_index * sizeof(verts), sizeof(verts), verts);
+    // Clear the slot render data.
+    clear_slot(slot_index);
 }
 
 void c_sprite_batch::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
@@ -272,18 +269,24 @@ int c_sprite_batch::find_tex_unit_to_use(const s_asset_id tex_id) const
     return free_tex_unit;
 }
 
-s_sprite_batch_slot_key c_sprite_batch_layer::take_any_available_slot(const s_asset_id tex_id)
+void c_sprite_batch_layer::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
 {
-    s_sprite_batch_slot_key key;
-
-    const auto take_slot_and_update_key = [&key, tex_id, this](const int batch_index)
+    for (const auto &batch : m_batches)
     {
-        const int slot_index_taken = m_batches[batch_index].take_any_available_slot(tex_id);
+        batch.render(assets, window_size);
+    }
+}
+
+void c_sprite_batch_layer::take_any_available_slot(const s_asset_id tex_id, int &batch_index, int &slot_index)
+{
+    const auto try_to_take_slot = [tex_id, &batch_index, &slot_index, this](const int trial_batch_index)
+    {
+        const int slot_index_taken = m_batches[trial_batch_index].take_any_available_slot(tex_id);
 
         if (slot_index_taken != -1)
         {
-            key.batch_index = batch_index;
-            key.slot_index = slot_index_taken;
+            batch_index = trial_batch_index;
+            slot_index = slot_index_taken;
             return true;
         }
 
@@ -292,21 +295,23 @@ s_sprite_batch_slot_key c_sprite_batch_layer::take_any_available_slot(const s_as
 
     for (int i = 0; i < m_batches.size(); ++i)
     {
-        if (take_slot_and_update_key(i))
+        if (try_to_take_slot(i))
         {
-            return key;
+            return;
         }
     }
 
     m_batches.emplace_back();
-    static_cast<void>(take_slot_and_update_key(m_batches.size() - 1));
-    return key;
+    static_cast<void>(try_to_take_slot(m_batches.size() - 1));
 }
 
-void c_sprite_batch_layer::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
+void c_renderer::render(const c_assets &assets, const cc::s_vec_2d_int window_size)
 {
-    for (const auto &batch : m_batches)
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    for (const c_sprite_batch_layer &sb_layer : m_sprite_batch_layers)
     {
-        batch.render(assets, window_size);
+        sb_layer.render(assets, window_size);
     }
 }

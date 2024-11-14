@@ -11,9 +11,9 @@ constexpr int k_tilemap_size = 32;
 class c_tilemap
 {
 public:
-    c_tilemap(c_sprite_batch_layer &sb_layer);
+    c_tilemap(c_renderer &renderer);
 
-    void rewrite_tiles(c_sprite_batch_layer &sb_layer, const c_assets &assets);
+    void rewrite_render_data(const c_renderer &renderer, const c_assets &assets);
 
 #if 0
     void fetch_from_ifs(std::ifstream &ifs);

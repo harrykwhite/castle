@@ -4,6 +4,7 @@
 #include <castle_common/cc_debugging.h>
 #include <castle_common/cc_misc.h>
 
+using u_byte = unsigned char;
 using u_gl_id = GLuint;
 
 template<int BIT_CNT>

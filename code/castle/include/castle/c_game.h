@@ -23,7 +23,7 @@ private:
 
     c_assets m_assets;
 
-    std::vector<c_sprite_batch_layer> m_sprite_batch_layers; // We'll need a distinct set per game state, I think?
+    c_renderer m_renderer;
 
     static inline double calc_valid_frame_dur(const double frame_time, const double frame_time_last)
     {
