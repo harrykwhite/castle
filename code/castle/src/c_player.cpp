@@ -17,10 +17,11 @@ void c_player_ent::proc_movement(const c_input_manager &input_manager, const c_t
     proc_hor_and_ver_tile_collisions(tilemap, assets);
 
     m_pos += m_vel;
+}
 
-    const cc::s_vec_2d_int tex_size = assets.get_tex_size(k_player_tex_id);
-
-    m_rot = cc::get_dir(m_pos, input_manager.get_mouse_pos());
+void c_player_ent::update_rot(const c_input_manager &input_manager, const s_camera &cam, const cc::s_vec_2d_int window_size)
+{
+    m_rot = cc::get_dir(m_pos, get_screen_to_cam_pos(input_manager.get_mouse_pos(), cam, window_size));
 }
 
 void c_player_ent::rewrite_render_data(const c_renderer &renderer, const c_assets &assets)

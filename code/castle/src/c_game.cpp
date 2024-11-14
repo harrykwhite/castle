@@ -80,6 +80,7 @@ void c_game::run()
     std::cout << "Successfully loaded game assets!" << std::endl;
 
     // TEMP
+    m_cam.scale = 2.0f;
     m_renderer.reset_sprite_batch_layers(2);
 
     c_player_ent player_ent(m_renderer);
@@ -114,6 +115,9 @@ void c_game::run()
 
         if (tick_count > 0)
         {
+            cc::s_vec_2d_int window_size;
+            glfwGetWindowSize(m_glfw_window, &window_size.x, &window_size.y);
+
             input_manager.refresh(m_glfw_window);
 
             // Execute ticks.
@@ -123,9 +127,12 @@ void c_game::run()
                 do
                 {
                     player_ent.proc_movement(input_manager, tilemap, m_assets);
+                    player_ent.update_rot(input_manager, m_cam, window_size);
                     player_ent.rewrite_render_data(m_renderer, m_assets);
 
                     tilemap.rewrite_render_data(m_renderer, m_assets);
+
+                    m_cam.pos = player_ent.get_pos();
 
                     frame_dur_accum -= k_targ_tick_dur;
 
@@ -136,11 +143,7 @@ void c_game::run()
 
             // Render.
             glfwSwapBuffers(m_glfw_window);
-
-            cc::s_vec_2d_int window_size;
-            glfwGetWindowSize(m_glfw_window, &window_size.x, &window_size.y);
-
-            m_renderer.render(m_assets, window_size);
+            m_renderer.render(m_cam, m_assets, window_size);
         }
     }
 }

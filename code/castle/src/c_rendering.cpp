@@ -1,6 +1,5 @@
 #include <castle/c_rendering.h>
 
-#include <assert.h>
 #include <castle/c_assets.h>
 #include <castle_common/cc_misc.h>
 
@@ -215,17 +214,17 @@ void c_sprite_batch::release_slot(const int slot_index)
     clear_slot(slot_index);
 }
 
-void c_sprite_batch::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
+void c_sprite_batch::render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size) const
 {
     const int sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::make_core_shader_prog_id(ec_core_shader_prog::sprite_quad));
 
     glUseProgram(sprite_quad_prog_gl_id);
 
-    const cc::s_matrix_4x4 view = cc::s_matrix_4x4::make_identity();
-    glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_view"), 1, GL_FALSE, reinterpret_cast<const float *>(view.elems));
+    const cc::s_matrix_4x4 view_mat = make_cam_view_matrix(cam, window_size);
+    glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_view"), 1, GL_FALSE, reinterpret_cast<const float *>(view_mat.elems));
 
-    const cc::s_matrix_4x4 proj = cc::s_matrix_4x4::make_ortho(0.0f, window_size.x, window_size.y, 0.0f, -1.0f, 1.0f);
-    glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_proj"), 1, GL_FALSE, reinterpret_cast<const float *>(proj.elems));
+    const cc::s_matrix_4x4 proj_mat = cc::s_matrix_4x4::make_ortho(0.0f, window_size.x, window_size.y, 0.0f, -1.0f, 1.0f);
+    glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_proj"), 1, GL_FALSE, reinterpret_cast<const float *>(proj_mat.elems));
 
     // Set up texture units.
     int tex_units[k_tex_unit_limit] = {0};
@@ -246,6 +245,16 @@ void c_sprite_batch::render(const c_assets &assets, const cc::s_vec_2d_int windo
     // Draw the batch.
     glBindVertexArray(m_vert_array_gl_id);
     glDrawElements(GL_TRIANGLES, 6 * k_slot_cnt, GL_UNSIGNED_SHORT, 0);
+}
+
+cc::s_matrix_4x4 c_sprite_batch::make_cam_view_matrix(const s_camera &cam, const cc::s_vec_2d_int window_size)
+{
+    auto mat = cc::s_matrix_4x4::make_identity();
+    mat[0][0] = cam.scale;
+    mat[1][1] = cam.scale;
+    mat[3][0] = (-cam.pos.x * cam.scale) + (window_size.x / 2.0f);
+    mat[3][1] = (-cam.pos.y * cam.scale) + (window_size.y / 2.0f);
+    return mat;
 }
 
 int c_sprite_batch::find_tex_unit_to_use(const s_asset_id tex_id) const
@@ -269,11 +278,11 @@ int c_sprite_batch::find_tex_unit_to_use(const s_asset_id tex_id) const
     return free_tex_unit;
 }
 
-void c_sprite_batch_layer::render(const c_assets &assets, const cc::s_vec_2d_int window_size) const
+void c_sprite_batch_layer::render(const s_camera &camera, const c_assets &assets, const cc::s_vec_2d_int window_size) const
 {
     for (const auto &batch : m_batches)
     {
-        batch.render(assets, window_size);
+        batch.render(camera, assets, window_size);
     }
 }
 
@@ -305,13 +314,13 @@ void c_sprite_batch_layer::take_any_available_slot(const s_asset_id tex_id, int 
     static_cast<void>(try_to_take_slot(m_batches.size() - 1));
 }
 
-void c_renderer::render(const c_assets &assets, const cc::s_vec_2d_int window_size)
+void c_renderer::render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size)
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     for (const c_sprite_batch_layer &sb_layer : m_sprite_batch_layers)
     {
-        sb_layer.render(assets, window_size);
+        sb_layer.render(cam, assets, window_size);
     }
 }

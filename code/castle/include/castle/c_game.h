@@ -23,6 +23,7 @@ private:
 
     c_assets m_assets;
 
+    s_camera m_cam;
     c_renderer m_renderer;
 
     static inline double calc_valid_frame_dur(const double frame_time, const double frame_time_last)

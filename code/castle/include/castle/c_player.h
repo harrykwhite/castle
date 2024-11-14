@@ -15,7 +15,13 @@ public:
     c_player_ent(c_renderer &renderer);
 
     void proc_movement(const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets);
+    void update_rot(const c_input_manager &input_manager, const s_camera &cam, const cc::s_vec_2d_int window_size);
     void rewrite_render_data(const c_renderer &renderer, const c_assets &assets);
+
+    inline cc::s_vec_2d get_pos() const
+    {
+        return m_pos;
+    }
 
     inline cc::s_rect_float get_collider(const c_assets &assets, const cc::s_vec_2d offs = {}) const
     {

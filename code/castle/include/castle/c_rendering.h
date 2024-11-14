@@ -19,6 +19,12 @@ struct s_color
     float r, g, b, a;
 };
 
+struct s_camera
+{
+    cc::s_vec_2d pos;
+    float scale;
+};
+
 struct s_sprite_batch_slot_key
 {
     int layer_index;
@@ -47,7 +53,7 @@ public:
     void clear_slot(const int slot_index) const;
     void release_slot(const int slot_index);
 
-    void render(const c_assets &assets, const cc::s_vec_2d_int window_size) const;
+    void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size) const;
 
 private:
     static constexpr int k_slot_cnt = 1024;
@@ -70,13 +76,15 @@ private:
     s_asset_id m_tex_unit_tex_ids[k_tex_unit_limit] = {}; // What texture ID (the actual texture asset) each unit maps to.
     int m_tex_unit_ref_cnts[k_tex_unit_limit] = {}; // How many slots are mapped to each unit.
 
+    static cc::s_matrix_4x4 make_cam_view_matrix(const s_camera &camera, const cc::s_vec_2d_int window_size);
+
     int find_tex_unit_to_use(const s_asset_id tex_id) const;
 };
 
 class c_sprite_batch_layer
 {
 public:
-    void render(const c_assets &assets, const cc::s_vec_2d_int window_size) const;
+    void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size) const;
     void take_any_available_slot(const s_asset_id tex_id, int &batch_index, int &slot_index);
 
     inline void write_to_slot(const int batch_index, const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const
@@ -101,7 +109,7 @@ private:
 class c_renderer
 {
 public:
-    void render(const c_assets &assets, const cc::s_vec_2d_int window_size);
+    void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size);
 
     inline s_sprite_batch_slot_key take_any_available_sprite_batch_slot(const int layer_index, const s_asset_id tex_id)
     {
@@ -135,5 +143,21 @@ public:
 private:
     std::vector<c_sprite_batch_layer> m_sprite_batch_layers;
 };
+
+inline cc::s_vec_2d get_cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_int window_size)
+{
+    return {
+        ((pos.x - cam.pos.x) * cam.scale) + (window_size.x / 2.0f),
+        ((pos.y - cam.pos.y) * cam.scale) + (window_size.y / 2.0f)
+    };
+}
+
+inline cc::s_vec_2d get_screen_to_cam_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_int window_size)
+{
+    return {
+        ((pos.x - (window_size.x / 2.0f)) / cam.scale) + cam.pos.x,
+        ((pos.y - (window_size.y / 2.0f)) / cam.scale) + cam.pos.y
+    };
+}
 
 constexpr int k_sprite_quad_shader_prog_vert_cnt = 14;
