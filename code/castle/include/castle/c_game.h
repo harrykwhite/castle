@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "c_assets.h"
 #include "c_rendering.h"
+#include "c_scene.h"
 
 const std::string k_window_title = "Castle";
 
@@ -23,8 +24,7 @@ private:
 
     c_assets m_assets;
 
-    s_camera m_cam;
-    c_renderer m_renderer;
+    std::unique_ptr<c_scene> m_scene;
 
     static inline double calc_valid_frame_dur(const double frame_time, const double frame_time_last)
     {

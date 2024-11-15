@@ -2,7 +2,7 @@
 
 c_player_ent::c_player_ent(c_renderer &renderer)
 {
-    m_sb_slot_key = renderer.take_any_available_sprite_batch_slot(0, s_asset_id::make_core_tex_id(ec_core_tex::player));
+    m_sb_slot_key = renderer.take_any_available_sprite_batch_slot(static_cast<int>(ec_gameplay_sprite_batch_layer::player), s_asset_id::make_core_tex_id(ec_core_tex::player));
 }
 
 void c_player_ent::proc_movement(const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets)

@@ -3,7 +3,17 @@
 #include <castle_common/cc_math.h>
 #include "c_assets.h"
 #include "c_utils.h"
-#include <stack>
+
+enum class ec_title_sprite_batch_layer
+{
+    untitled
+};
+
+enum class ec_gameplay_sprite_batch_layer
+{
+    tiles,
+    player
+};
 
 struct s_color
 {
@@ -109,20 +119,21 @@ private:
 class c_renderer
 {
 public:
+    c_renderer(const int sb_layer_cnt)
+    {
+        CC_CHECK(sb_layer_cnt >= 1);
+        m_sprite_batch_layers.resize(sb_layer_cnt);
+    }
+
     void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size);
 
     inline s_sprite_batch_slot_key take_any_available_sprite_batch_slot(const int layer_index, const s_asset_id tex_id)
     {
+        CC_CHECK(layer_index >= 0 && layer_index < m_sprite_batch_layers.size());
         s_sprite_batch_slot_key key;
         m_sprite_batch_layers[layer_index].take_any_available_slot(tex_id, key.batch_index, key.slot_index);
         key.layer_index = layer_index;
         return key;
-    }
-
-    inline void reset_sprite_batch_layers(const int new_cnt)
-    {
-        m_sprite_batch_layers.clear();
-        m_sprite_batch_layers.resize(new_cnt);
     }
 
     inline void write_to_sprite_batch_slot(const s_sprite_batch_slot_key &key, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const

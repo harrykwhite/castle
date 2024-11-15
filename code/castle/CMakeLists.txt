@@ -8,6 +8,9 @@ add_executable(castle
 	src/c_game.cpp
 	include/castle/c_game.h
 	
+	src/c_scene.cpp
+	include/castle/c_scene.h
+	
 	src/c_modding.cpp
 	include/castle/c_modding.h
 

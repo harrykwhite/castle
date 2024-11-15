@@ -79,16 +79,8 @@ void c_game::run()
 
     std::cout << "Successfully loaded game assets!" << std::endl;
 
-    // TEMP
-    m_cam.scale = 2.0f;
-    m_renderer.reset_sprite_batch_layers(2);
-
-    c_player_ent player_ent(m_renderer);
-
-    c_tilemap tilemap(m_renderer);
-    tilemap.place_tile(2, 2);
-    tilemap.place_tile(3, 3);
-    tilemap.place_tile(5, 4);
+    // Set up the title scene.
+    m_scene = make_scene(ec_scene_type::title);
 
     // Show the window now that things have been set up.
     glfwShowWindow(m_glfw_window);
@@ -126,14 +118,18 @@ void c_game::run()
 
                 do
                 {
-                    player_ent.proc_movement(input_manager, tilemap, m_assets);
-                    player_ent.update_rot(input_manager, m_cam, window_size);
-                    player_ent.rewrite_render_data(m_renderer, m_assets);
+                    // Run scene tick.
+                    bool change_scene = false;
+                    ec_scene_type change_scene_type;
 
-                    tilemap.rewrite_render_data(m_renderer, m_assets);
+                    m_scene->on_tick(input_manager, m_assets, window_size, change_scene, change_scene_type);
 
-                    m_cam.pos = player_ent.get_pos();
+                    if (change_scene)
+                    {
+                        m_scene = make_scene(change_scene_type);
+                    }
 
+                    //
                     frame_dur_accum -= k_targ_tick_dur;
 
                     ++i;
@@ -143,7 +139,7 @@ void c_game::run()
 
             // Render.
             glfwSwapBuffers(m_glfw_window);
-            m_renderer.render(m_cam, m_assets, window_size);
+            m_scene->render(m_assets, window_size);
         }
     }
 }

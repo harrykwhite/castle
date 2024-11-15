@@ -30,7 +30,7 @@ public:
     ~c_asset_group();
 
     void load_from_ifs(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt);
-    
+
     inline int get_tex_cnt() const
     {
         return m_tex_cnt;
@@ -65,7 +65,7 @@ private:
 
     std::unique_ptr<u_gl_id[]> m_tex_gl_ids;
     std::unique_ptr<cc::s_vec_2d_int[]> m_tex_sizes;
-    
+
     std::unique_ptr<u_gl_id[]> m_shader_prog_gl_ids;
 };
 
@@ -94,7 +94,7 @@ class c_assets
 {
 public:
     bool load_core_group();
-    
+
     inline void load_mod_group_from_ifs(const int group_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
     {
         CC_CHECK(group_index >= 0 && group_index < k_asset_group_cnt);
