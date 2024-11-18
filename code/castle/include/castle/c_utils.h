@@ -96,3 +96,10 @@ inline bool c_bitset<BIT_CNT>::is_empty() const
 
     return true;
 }
+
+inline int incr_wrapped(const int val, const int incr, const int max_excl)
+{
+    const int max_wrapped = (val + incr) % max_excl;
+    const int min_wrapped = max_wrapped < 0 ? max_wrapped + max_excl : max_wrapped;
+    return min_wrapped;
+}

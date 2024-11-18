@@ -1,6 +1,7 @@
 #include <castle/c_game.h>
 
 #include <iostream>
+#include <cmath>
 #include <GLFW/glfw3.h>
 #include <castle/c_rendering.h>
 #include <castle/c_assets.h>
@@ -54,6 +55,12 @@ static inline void glfw_window_size_callback(GLFWwindow *const window, const int
     glViewport(0, 0, width, height);
 }
 
+static inline void glfw_scroll_callback(GLFWwindow *const window, const double x_offs, const double y_offs)
+{
+    int *const callback_mouse_scroll = static_cast<int *>(glfwGetWindowUserPointer(window));
+    *callback_mouse_scroll = y_offs;
+}
+
 static inline cc::s_vec_2d_i get_glfw_window_size(GLFWwindow *const window)
 {
     cc::s_vec_2d_i size;
@@ -99,6 +106,7 @@ void run_game()
 
     // Set GLFW window callbacks.
     glfwSetWindowSizeCallback(glfw_window, glfw_window_size_callback);
+    glfwSetScrollCallback(glfw_window, glfw_scroll_callback);
 
     // Hide the cursor.
     glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
@@ -135,6 +143,15 @@ void run_game()
     // Set up UI.
     s_ui ui = make_ui(sprite_batch_collection);
 
+    // TEMP
+    int player_inv_hotbar_slot_selected = 0;
+
+    // Set up input.
+    s_input_state_pair input_state_pair(gen_blank_input_state(), gen_blank_input_state());
+
+    int glfw_callback_mouse_scroll = 0; // This is an axis representing the scroll wheel movement. It is updated by the GLFW scroll callback and gets reset after a new input state is generated.
+    glfwSetWindowUserPointer(glfw_window, &glfw_callback_mouse_scroll);
+
     // Show the window now that things have been set up.
     glfwShowWindow(glfw_window);
 
@@ -143,8 +160,6 @@ void run_game()
     //
     double frame_time = glfwGetTime();
     double frame_dur_accum = 0.0;
-
-    s_input_state_pair input_state_pair(gen_blank_input_state(), gen_blank_input_state());
 
     std::cout << "Entering the main loop..." << std::endl;
 
@@ -164,7 +179,8 @@ void run_game()
 
         if (tick_cnt > 0)
         {
-            input_state_pair = {gen_input_state(glfw_window), input_state_pair.state_last};
+            input_state_pair = {gen_input_state(glfw_window, glfw_callback_mouse_scroll), input_state_pair.state_last};
+            glfw_callback_mouse_scroll = 0;
 
             // Execute ticks.
             int i = 0;
@@ -172,7 +188,10 @@ void run_game()
             do
             {
                 world_tick(world, input_state_pair, sprite_batch_collection, assets, glfw_window_size);
-                write_ui_render_data(ui, sprite_batch_collection, assets, input_state_pair, world.cam, glfw_window_size);
+
+                player_inv_hotbar_slot_selected = incr_wrapped(player_inv_hotbar_slot_selected, -input_state_pair.state.mouse_scroll, k_player_inv_hotbar_slot_cnt);
+
+                write_ui_render_data(ui, sprite_batch_collection, assets, input_state_pair, world.cam, glfw_window_size, player_inv_hotbar_slot_selected);
 
                 frame_dur_accum -= k_targ_tick_dur;
                 ++i;

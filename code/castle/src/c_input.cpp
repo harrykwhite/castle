@@ -182,7 +182,7 @@ static std::array<float, k_gamepad_axis_code_cnt> get_gamepad_axis_values(const 
     return gamepad_axis_values;
 }
 
-s_input_state gen_input_state(GLFWwindow *const glfw_window)
+s_input_state gen_input_state(GLFWwindow *const glfw_window, const int mouse_scroll)
 {
     const int gamepad_glfw_joystick_index = get_gamepad_glfw_joystick_index();
     const std::optional<GLFWgamepadstate> glfw_gamepad_state = get_glfw_gamepad_state(gamepad_glfw_joystick_index);
@@ -191,6 +191,7 @@ s_input_state gen_input_state(GLFWwindow *const glfw_window)
         get_keys_down_bits(glfw_window),
         get_mouse_pos(glfw_window),
         get_mouse_buttons_down_bits(glfw_window),
+        mouse_scroll,
         gamepad_glfw_joystick_index,
         get_gamepad_buttons_down_bits(glfw_gamepad_state),
         get_gamepad_axis_values(glfw_gamepad_state)

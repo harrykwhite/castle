@@ -14,7 +14,7 @@ s_ui make_ui(s_sprite_batch_collection &sb_collection)
     return ui;
 }
 
-void write_ui_render_data(const s_ui &ui, const s_sprite_batch_collection &sb_collection, const c_assets &assets, const s_input_state_pair &input_state_pair, const s_camera &cam, const cc::s_vec_2d_i window_size)
+void write_ui_render_data(const s_ui &ui, const s_sprite_batch_collection &sb_collection, const c_assets &assets, const s_input_state_pair &input_state_pair, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected)
 {
     // Write inventory hotbar slots.
     {
@@ -28,7 +28,19 @@ void write_ui_render_data(const s_ui &ui, const s_sprite_batch_collection &sb_co
         for (int i = 0; i < k_player_inv_hotbar_slot_cnt; ++i)
         {
             const cc::s_vec_2d slot_pos = hotbar_pos + (cc::s_vec_2d {hotbar_slot_pos_x_offs + (i * hotbar_slot_gap), 0.0f});
-            write_to_sprite_batch_slot(ui.player_sb_slot_key[i], sb_collection, assets, slot_pos, {0, 0, slot_tex_size.x, slot_tex_size.y}, {0.5f, 0.5f}, 0.0f, {cam.scale, cam.scale});
+            const s_color slot_blend = i == player_inv_hotbar_slot_selected ? s_color::yellow() : s_color::white();
+
+            write_to_sprite_batch_slot(
+                ui.player_sb_slot_key[i],
+                sb_collection,
+                assets,
+                slot_pos,
+                {0, 0, slot_tex_size.x, slot_tex_size.y},
+                {0.5f, 0.5f},
+                0.0f,
+                {cam.scale, cam.scale},
+                slot_blend
+            );
         }
     }
 
