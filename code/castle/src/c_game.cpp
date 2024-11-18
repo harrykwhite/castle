@@ -20,6 +20,8 @@ struct s_game_cleanup_info
 
 static void clean_game(const s_game_cleanup_info &info)
 {
+    std::cout << "Cleaning up..." << std::endl;
+
     if (info.assets)
     {
         info.assets->dispose_all();
@@ -61,10 +63,12 @@ static inline cc::s_vec_2d_i get_glfw_window_size(GLFWwindow *const window)
 
 void run_game()
 {
+    s_game_cleanup_info cleanup_info = {};
+
     //
     // Initialisation
     //
-    s_game_cleanup_info cleanup_info = {};
+    std::cout << "Initialising..." << std::endl;
 
     // Initialise GLFW.
     if (!glfwInit())
@@ -141,6 +145,8 @@ void run_game()
     double frame_dur_accum = 0.0;
 
     s_input_state_pair input_state_pair(gen_blank_input_state(), gen_blank_input_state());
+
+    std::cout << "Entering the main loop..." << std::endl;
 
     while (!glfwWindowShouldClose(glfw_window))
     {
