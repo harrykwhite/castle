@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <castle_common/cc_assets.h>
 #include <castle_common/cc_misc.h>
 
 bool c_assets::load_core_group()
@@ -53,6 +52,8 @@ void c_assets::dispose_group(const int index)
     assert(index >= 0 && index < k_asset_group_cnt);
     assert(m_group_activity.is_bit_active(index));
 
+    glDeleteTextures(m_groups[index].font_cnt, m_groups[index].buf_font_tex_gl_ids);
+
     for (int i = 0; i < m_groups[index].shader_prog_cnt; ++i)
     {
         glDeleteProgram(m_groups[index].buf_shader_prog_gl_ids[i]);
@@ -67,23 +68,25 @@ void c_assets::dispose_group(const int index)
     m_group_activity.deactivate_bit(index);
 }
 
-bool c_assets::load_mod_group(const int mod_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
+bool c_assets::load_mod_group(const int mod_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt)
 {
     assert(mod_index >= 0 && mod_index < k_mod_limit);
     assert(!m_group_activity.is_bit_active(1 + mod_index));
     bool err = false;
-    m_groups[1 + mod_index] = make_asset_group(ifs, tex_cnt, shader_prog_cnt);
+    m_groups[1 + mod_index] = make_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
     m_group_activity.activate_bit(1 + mod_index);
     return err;
 }
 
-s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
+s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt)
 {
     const int buf_tex_gl_ids_offs = 0;
     const int buf_tex_sizes_offs = sizeof(u_gl_id) * tex_cnt;
     const int buf_shader_prog_gl_ids_offs = buf_tex_sizes_offs + (sizeof(cc::s_vec_2d_i) * tex_cnt);
+    const int buf_font_tex_gl_ids_offs = buf_shader_prog_gl_ids_offs + (sizeof(u_gl_id) * shader_prog_cnt);
+    const int buf_font_datas_offs = buf_font_tex_gl_ids_offs + (sizeof(u_gl_id) * font_cnt);
 
-    const int buf_size = buf_shader_prog_gl_ids_offs + (sizeof(u_gl_id) * shader_prog_cnt);
+    const int buf_size = buf_font_datas_offs + (sizeof(cc::s_font_data) * font_cnt);
     auto const buf = new cc::u_byte[buf_size];
 
     //
@@ -190,13 +193,48 @@ s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int 
         return shader_prog_gl_ids;
     }();
 
+    //
+    // Fonts
+    //
+    const u_gl_id *const font_tex_gl_ids = [&ifs, font_cnt, buf_font_tex_gl_ids_offs, buf]()
+    {
+        auto const font_tex_gl_ids = reinterpret_cast<u_gl_id *>(buf + buf_font_tex_gl_ids_offs);
+        glGenTextures(font_cnt, font_tex_gl_ids);
+        return font_tex_gl_ids;
+    }();
+
+    const cc::s_font_data *const font_datas = [&ifs, font_cnt, buf_font_datas_offs, buf, font_tex_gl_ids]()
+    {
+        auto const font_datas = reinterpret_cast<cc::s_font_data *>(buf + buf_font_datas_offs);
+
+        const int px_data_buf_size = cc::k_font_tex_channel_cnt * cc::k_tex_size_limit.x * cc::k_tex_size_limit.y;
+        const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size);
+
+        for (int i = 0; i < font_cnt; ++i)
+        {
+            ifs.read(reinterpret_cast<char *>(&font_datas[i]), sizeof(cc::s_font_data));
+
+            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), cc::k_font_tex_channel_cnt * font_datas[i].tex_size.x * font_datas[i].tex_size.y);
+
+            glBindTexture(GL_TEXTURE_2D, font_tex_gl_ids[i]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, font_datas[i].tex_size.x, font_datas[i].tex_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
+        }
+
+        return font_datas;
+    }();
+
     return {
         buf,
         tex_gl_ids,
         tex_sizes,
         shader_prog_gl_ids,
+        font_tex_gl_ids,
+        font_datas,
         tex_cnt,
-        shader_prog_cnt
+        shader_prog_cnt,
+        font_cnt
     };
 }
 
@@ -218,5 +256,5 @@ s_asset_group make_core_asset_group(bool &err)
     const auto font_cnt = cc::read_from_ifs<int>(ifs);
 
     // Make the asset group from the rest of the file.
-    return make_asset_group(ifs, tex_cnt, shader_prog_cnt);
+    return make_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
 }
