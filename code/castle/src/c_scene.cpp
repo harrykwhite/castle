@@ -2,6 +2,7 @@
 
 #include <array>
 
+#if 0
 const s_scene_type_info &get_scene_type_info(const ec_scene_type type)
 {
     static const std::array<s_scene_type_info, k_scene_type_cnt> scene_type_infos = []()
@@ -106,3 +107,4 @@ void c_scene::render(const c_assets &assets, const cc::s_vec_2d_i window_size) c
 
     render_sprite_batches(m_sprite_batch_collection, m_cam, assets, window_size);
 }
+#endif

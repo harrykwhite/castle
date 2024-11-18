@@ -6,7 +6,7 @@ s_player_ent make_player_ent(const cc::s_vec_2d pos, s_sprite_batch_collection &
     const cc::s_vec_2d tex_size_f = {static_cast<float>(tex_size.x), static_cast<float>(tex_size.y)};
 
     return {
-        take_any_sprite_batch_slot(static_cast<int>(ec_gameplay_sprite_batch_layer::player), s_asset_id::make_core_tex_id(ec_core_tex::player), batch_collection),
+        take_any_sprite_batch_slot(static_cast<int>(ec_sprite_batch_layer::player), s_asset_id::make_core_tex_id(ec_core_tex::player), batch_collection),
         pos,
         {},
         0.0f,

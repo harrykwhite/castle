@@ -36,11 +36,6 @@ struct s_asset_group
     int shader_prog_cnt;
 };
 
-struct s_assets
-{
-    s_asset_group groups[k_asset_group_cnt];
-};
-
 struct s_asset_id
 {
     int group_index;

@@ -1,7 +1,11 @@
 #include <castle/c_game.h>
 
 #include <iostream>
-#include <castle/c_scene.h>
+#include <GLFW/glfw3.h>
+#include <castle/c_rendering.h>
+#include <castle/c_assets.h>
+#include <castle/c_input.h>
+#include <castle/c_world.h>
 
 struct s_game_cleanup_info
 {
@@ -114,8 +118,11 @@ void run_game()
 
     cleanup_info.assets = &assets;
 
-    // Create the title scene.
-    c_scene *scene = make_scene(ec_scene_type::title, assets);
+    // Set up sprite batch collection.
+    s_sprite_batch_collection sprite_batch_collection = make_sprite_batch_collection({1, 8, 1}, 2);
+
+    // Create the game world.
+    s_world world = make_world(sprite_batch_collection, assets);
 
     // Show the window now that things have been set up.
     glfwShowWindow(glfw_window);
@@ -151,19 +158,9 @@ void run_game()
 
             do
             {
-                bool change_scene = false;
-                ec_scene_type change_scene_type;
-
-                scene->tick(input_state_pair, assets, glfw_window_size, change_scene, change_scene_type);
-
-                if (change_scene)
-                {
-                    delete scene;
-                    scene = make_scene(change_scene_type, assets);
-                }
+                world_tick(world, input_state_pair, sprite_batch_collection, assets, glfw_window_size);
 
                 frame_dur_accum -= k_targ_tick_dur;
-
                 ++i;
             }
             while (i < tick_cnt);
@@ -171,10 +168,12 @@ void run_game()
 
         // Render.
         glfwSwapBuffers(glfw_window);
-        scene->render(assets, glfw_window_size);
-    }
 
-    delete scene;
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        render_sprite_batches(sprite_batch_collection, world.cam, assets, glfw_window_size);
+    }
 
     clean_game(cleanup_info);
 }

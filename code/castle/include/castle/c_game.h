@@ -1,11 +1,5 @@
 #pragma once
 
-#include <array>
-#include <GLFW/glfw3.h>
-#include "c_assets.h"
-#include "c_rendering.h"
-#include "c_scene.h"
-
 void run_game();
 
 constexpr int k_gl_version_major = 4;

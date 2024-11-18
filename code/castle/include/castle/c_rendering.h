@@ -7,12 +7,7 @@
 #include "c_assets.h"
 #include "c_utils.h"
 
-enum class ec_title_sprite_batch_layer
-{
-    untitled
-};
-
-enum class ec_gameplay_sprite_batch_layer
+enum class ec_sprite_batch_layer
 {
     player,
     tiles,
@@ -113,8 +108,5 @@ inline cc::s_vec_2d screen_to_cam_pos(const cc::s_vec_2d pos, const s_camera &ca
         ((pos.y - (window_size.y / 2.0f)) / cam.scale) + cam.pos.y
     };
 }
-
-constexpr int k_title_sprite_batch_layer_cnt = static_cast<int>(ec_title_sprite_batch_layer::untitled) + 1;
-constexpr int k_gameplay_sprite_batch_layer_cnt = static_cast<int>(ec_gameplay_sprite_batch_layer::cursor) + 1;
 
 constexpr int k_sprite_quad_shader_prog_vert_cnt = 14;

@@ -1,5 +1,6 @@
 #pragma once
 
+#if 0
 #include <vector>
 #include "c_tilemap.h"
 #include "c_rendering.h"
@@ -69,3 +70,4 @@ private:
 
 const s_scene_type_info &get_scene_type_info(const ec_scene_type type);
 c_scene *make_scene(const ec_scene_type type, const c_assets &assets);
+#endif

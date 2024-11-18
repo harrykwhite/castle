@@ -6,7 +6,7 @@ c_tilemap::c_tilemap(s_sprite_batch_collection &sprite_batch_collection)
     {
         for (int x = 0; x < k_tilemap_size; ++x)
         {
-            m_sb_slot_keys[y][x] = take_any_sprite_batch_slot(static_cast<int>(ec_title_sprite_batch_layer::untitled), s_asset_id::make_core_tex_id(ec_core_tex::dirt_tile), sprite_batch_collection);
+            m_sb_slot_keys[y][x] = take_any_sprite_batch_slot(static_cast<int>(ec_sprite_batch_layer::tiles), s_asset_id::make_core_tex_id(ec_core_tex::dirt_tile), sprite_batch_collection);
         }
     }
 }
