@@ -19,7 +19,8 @@ constexpr int k_src_asset_file_path_buf_size = 128;
 const std::string k_src_tex_file_path_ends[] = {
     "/textures/characters/player.png",
     "/textures/tiles/dirt.png",
-    "/textures/tiles/stone.png"
+    "/textures/tiles/stone.png",
+    "/textures/ui/cursor.png"
 };
 
 const s_src_shader_prog_info k_src_shader_prog_infos[] = {

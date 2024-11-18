@@ -286,9 +286,9 @@ void write_to_sprite_batch_slot(const s_sprite_batch_slot_key slot_key, const s_
         static_cast<float>(tex_unit),
         static_cast<float>(src_rect.x) / tex_size.x,
         static_cast<float>(src_rect.y) / tex_size.y,
-        blend.r,
-        blend.g,
-        blend.b,
+        blend.r, // NOTE: We might not even need this...
+        blend.g, // NOTE: We might not even need this...
+        blend.b, // NOTE: We might not even need this...
         blend.a,
 
         (1.0f - origin.x) * scale.x,

@@ -6,6 +6,7 @@
 #include <castle/c_assets.h>
 #include <castle/c_input.h>
 #include <castle/c_world.h>
+#include <castle/c_ui.h>
 
 struct s_game_cleanup_info
 {
@@ -95,6 +96,9 @@ void run_game()
     // Set GLFW window callbacks.
     glfwSetWindowSizeCallback(glfw_window, glfw_window_size_callback);
 
+    // Hide the cursor.
+    glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
     // Initialise OpenGL function pointers.
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
@@ -123,6 +127,9 @@ void run_game()
 
     // Create the game world.
     s_world world = make_world(sprite_batch_collection, assets);
+
+    // Set up UI.
+    s_ui ui = make_ui(sprite_batch_collection);
 
     // Show the window now that things have been set up.
     glfwShowWindow(glfw_window);
@@ -159,6 +166,7 @@ void run_game()
             do
             {
                 world_tick(world, input_state_pair, sprite_batch_collection, assets, glfw_window_size);
+                write_ui_render_data(ui, sprite_batch_collection, assets, input_state_pair, world.cam);
 
                 frame_dur_accum -= k_targ_tick_dur;
                 ++i;

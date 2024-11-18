@@ -17,7 +17,8 @@ enum class ec_core_tex
 {
     player,
     dirt_tile,
-    stone_tile
+    stone_tile,
+    cursor
 };
 
 enum class ec_core_shader_prog

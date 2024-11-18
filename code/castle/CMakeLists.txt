@@ -37,6 +37,9 @@ add_executable(castle WIN32
 	src/c_world.cpp
 	include/castle/c_world.h
 	
+	src/c_ui.cpp
+	include/castle/c_ui.h
+	
 	${CMAKE_SOURCE_DIR}/code/vendor/glad/src/glad.c
 )
 
