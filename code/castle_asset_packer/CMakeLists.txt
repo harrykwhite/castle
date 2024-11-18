@@ -4,6 +4,10 @@ find_package(Freetype REQUIRED)
 
 add_executable(castle_asset_packer
 	src/cap_main.cpp
+	src/cap_textures.cpp
+	src/cap_shader_progs.cpp
+	src/cap_fonts.cpp
+	src/cap_shared.h
 	${CMAKE_SOURCE_DIR}/code/vendor/stb_image/src/stb_image.c
 )
 

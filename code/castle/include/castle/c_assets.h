@@ -29,13 +29,14 @@ enum class ec_core_shader_prog
 
 struct s_asset_group
 {
-    const u_byte *buf;
+    const cc::u_byte *buf;
     const u_gl_id *buf_tex_gl_ids;
     const cc::s_vec_2d_i *buf_tex_sizes;
     const u_gl_id *buf_shader_prog_gl_ids;
 
     int tex_cnt;
     int shader_prog_cnt;
+    int font_cnt;
 };
 
 struct s_asset_id

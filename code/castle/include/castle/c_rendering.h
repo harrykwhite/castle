@@ -69,7 +69,7 @@ struct s_sprite_batch_collection
     const int layer_cnt;
     const int batch_cnt;
 
-    const u_byte *const buf;
+    const cc::u_byte *const buf;
     s_sprite_batch *const buf_batches;
     const s_sprite_batch_layer_info *const buf_layer_infos;
 

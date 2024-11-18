@@ -38,7 +38,7 @@ void write_player_ent_render_data(const s_player_ent &player_ent, const s_sprite
 
 static cc::s_vec_2d vel_after_hor_and_ver_tile_collision_proc(const cc::s_vec_2d vel, const cc::s_vec_2d pos, const u_collider_maker collider_maker, const c_tilemap &tilemap)
 {
-    u_byte collision_flags = 0; // The first bit is set when a horizontal collision occurs, and the second bit is set when a vertical collision occurs.
+    cc::u_byte collision_flags = 0; // The first bit is set when a horizontal collision occurs, and the second bit is set when a vertical collision occurs.
 
     const cc::s_rect_f hor_collider = collider_maker(pos + cc::s_vec_2d {vel.x, 0.0f});
     const cc::s_rect_f ver_collider = collider_maker(pos + cc::s_vec_2d {0.0f, vel.y});

@@ -84,7 +84,7 @@ s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int 
     const int buf_shader_prog_gl_ids_offs = buf_tex_sizes_offs + (sizeof(cc::s_vec_2d_i) * tex_cnt);
 
     const int buf_size = buf_shader_prog_gl_ids_offs + (sizeof(u_gl_id) * shader_prog_cnt);
-    auto const buf = new u_byte[buf_size];
+    auto const buf = new cc::u_byte[buf_size];
 
     //
     // Textures
@@ -207,7 +207,7 @@ s_asset_group make_core_asset_group(bool &err)
 
     if (!ifs.is_open())
     {
-        //std::cout << "ERROR: Failed to open \"" << k_core_assets_file_name << "\"!" << std::endl;
+        // TODO: Handle error properly.
         err = true;
         return {};
     }
@@ -215,6 +215,7 @@ s_asset_group make_core_asset_group(bool &err)
     // Read the file header and get asset counts.
     const auto tex_cnt = cc::read_from_ifs<int>(ifs);
     const auto shader_prog_cnt = cc::read_from_ifs<int>(ifs);
+    const auto font_cnt = cc::read_from_ifs<int>(ifs);
 
     // Make the asset group from the rest of the file.
     return make_asset_group(ifs, tex_cnt, shader_prog_cnt);

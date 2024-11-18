@@ -116,7 +116,7 @@ s_sprite_batch_collection make_sprite_batch_collection(const std::vector<int> &l
 
     // Create the buffer.
     const int buf_size = (batch_cnt * sizeof(s_sprite_batch)) + (layer_cnt * sizeof(s_sprite_batch_layer_info));
-    auto const buf = new u_byte[buf_size]();
+    auto const buf = new cc::u_byte[buf_size]();
 
     // Determine buffer pointers.
     auto const buf_batches = reinterpret_cast<s_sprite_batch *>(buf);
