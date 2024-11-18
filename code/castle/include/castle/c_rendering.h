@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <numeric>
+#include <cassert>
 #include <castle_common/cc_math.h>
 #include "c_assets.h"
 #include "c_utils.h"
@@ -11,20 +14,21 @@ enum class ec_title_sprite_batch_layer
 
 enum class ec_gameplay_sprite_batch_layer
 {
+    player,
     tiles,
-    player
+    cursor
 };
 
 struct s_color
 {
-    static constexpr s_color make_white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr s_color make_black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr s_color make_red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr s_color make_green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr s_color make_blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
-    static constexpr s_color make_yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr s_color make_cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr s_color make_magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
+    static constexpr s_color white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
+    static constexpr s_color black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
+    static constexpr s_color red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
+    static constexpr s_color green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
+    static constexpr s_color blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
+    static constexpr s_color yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
+    static constexpr s_color cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
+    static constexpr s_color magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
 
     float r, g, b, a;
 };
@@ -32,130 +36,69 @@ struct s_color
 struct s_camera
 {
     cc::s_vec_2d pos;
-    float scale;
+    static constexpr float scale = 2.0f; // TEMP: This will likely be modifiable in an options menu in the future.
 };
 
-struct s_sprite_batch_slot_key
+struct s_sprite_batch
 {
-    int layer_index;
-    int batch_index;
-    int slot_index;
-};
-
-struct s_sprite_batch_slot_write_data // NOTE: Consider removing this; parameters might be simpler.
-{
-    cc::s_vec_2d pos;
-    float rot;
-    cc::s_vec_2d scale;
-    cc::s_vec_2d origin;
-    cc::s_rect src_rect;
-    s_color blend;
-};
-
-class c_sprite_batch
-{
-public:
-    c_sprite_batch();
-    ~c_sprite_batch();
-
-    int take_any_available_slot(const s_asset_id tex_id);
-    void write_to_slot(const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const;
-    void clear_slot(const int slot_index) const;
-    void release_slot(const int slot_index);
-
-    void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size) const;
-
-private:
     static constexpr int k_slot_cnt = 1024;
     static constexpr int k_available_slot_stack_size_max = 32;
     static constexpr int k_tex_unit_limit = 32; // TODO: Have the real texture unit limit have an effect.
 
-    u_gl_id m_vert_array_gl_id = 0;
-    u_gl_id m_vert_buf_gl_id = 0;
-    u_gl_id m_elem_buf_gl_id = 0;
+    u_gl_id vert_array_gl_id;
+    u_gl_id vert_buf_gl_id;
+    u_gl_id elem_buf_gl_id;
 
-    c_bitset<k_slot_cnt> m_slot_activity;
+    c_bitset<k_slot_cnt> slot_activity;
 
     // This is a stack where the indexes of released slots are pushed, so that when a new slot needs to be taken an available index can be taken from the top here.
-    int m_available_slot_stack[k_available_slot_stack_size_max] = {};
-    int m_available_slot_stack_size = 0;
+    int available_slot_stack[k_available_slot_stack_size_max];
+    int available_slot_stack_size;
 
-    int m_slot_tex_units[k_slot_cnt] = {}; // What texture unit each slot is mapped to.
+    int slot_tex_units[k_slot_cnt]; // What texture unit each slot is mapped to.
 
     // NOTE: Consider bundling the below into a struct.
-    s_asset_id m_tex_unit_tex_ids[k_tex_unit_limit] = {}; // What texture ID (the actual texture asset) each unit maps to.
-    int m_tex_unit_ref_cnts[k_tex_unit_limit] = {}; // How many slots are mapped to each unit.
-
-    static cc::s_matrix_4x4 make_cam_view_matrix(const s_camera &camera, const cc::s_vec_2d_int window_size);
-
-    int find_tex_unit_to_use(const s_asset_id tex_id) const;
+    s_asset_id tex_unit_tex_ids[k_tex_unit_limit]; // What texture ID (the actual texture asset) each unit maps to.
+    int tex_unit_ref_cnts[k_tex_unit_limit]; // How many slots are mapped to each unit.
 };
 
-class c_sprite_batch_layer
+struct s_sprite_batch_layer_info
 {
-public:
-    void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size) const;
-    void take_any_available_slot(const s_asset_id tex_id, int &batch_index, int &slot_index);
-
-    inline void write_to_slot(const int batch_index, const int slot_index, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const
-    {
-        m_batches[batch_index].write_to_slot(slot_index, write_data, assets);
-    }
-
-    inline void clear_slot(const int batch_index, const int slot_index) const
-    {
-        m_batches[batch_index].clear_slot(slot_index);
-    }
-
-    inline void release_slot(const int batch_index, const int slot_index)
-    {
-        m_batches[batch_index].release_slot(slot_index);
-    }
-
-private:
-    std::vector<c_sprite_batch> m_batches;
+    int batch_cnt;
+    int begin_batch_index;
 };
 
-class c_renderer
+struct s_sprite_batch_collection
 {
-public:
-    c_renderer(const int sb_layer_cnt)
-    {
-        CC_CHECK(sb_layer_cnt >= 1);
-        m_sprite_batch_layers.resize(sb_layer_cnt);
-    }
+    const int layer_cnt;
+    const int batch_cnt;
 
-    void render(const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_int window_size);
+    const u_byte *const buf;
+    s_sprite_batch *const buf_batches;
+    const s_sprite_batch_layer_info *const buf_layer_infos;
 
-    inline s_sprite_batch_slot_key take_any_available_sprite_batch_slot(const int layer_index, const s_asset_id tex_id)
-    {
-        CC_CHECK(layer_index >= 0 && layer_index < m_sprite_batch_layers.size());
-        s_sprite_batch_slot_key key;
-        m_sprite_batch_layers[layer_index].take_any_available_slot(tex_id, key.batch_index, key.slot_index);
-        key.layer_index = layer_index;
-        return key;
-    }
-
-    inline void write_to_sprite_batch_slot(const s_sprite_batch_slot_key &key, const s_sprite_batch_slot_write_data &write_data, const c_assets &assets) const
-    {
-        m_sprite_batch_layers[key.layer_index].write_to_slot(key.batch_index, key.slot_index, write_data, assets);
-    }
-
-    inline void clear_sprite_batch_slot(const s_sprite_batch_slot_key &key) const
-    {
-        m_sprite_batch_layers[key.layer_index].clear_slot(key.batch_index, key.slot_index);
-    }
-
-    inline void release_sprite_batch_slot(const s_sprite_batch_slot_key &key)
-    {
-        m_sprite_batch_layers[key.layer_index].release_slot(key.batch_index, key.slot_index);
-    }
-
-private:
-    std::vector<c_sprite_batch_layer> m_sprite_batch_layers;
+    const int screen_layers_begin_batch_index;
 };
 
-inline cc::s_vec_2d get_cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_int window_size)
+struct s_sprite_batch_slot_key
+{
+    int batch_index;
+    int slot_index;
+#if 0
+    const int batch_index;
+    const int slot_index;
+#endif
+};
+
+s_sprite_batch_collection make_sprite_batch_collection(const std::vector<int> &layer_batch_cnts, const int screen_layers_begin_batch_index);
+void dispose_sprite_batch_collection(const s_sprite_batch_collection &collection);
+void render_sprite_batches(const s_sprite_batch_collection &batch_collection, const s_camera &cam, const c_assets &assets, const cc::s_vec_2d_i window_size);
+s_sprite_batch_slot_key take_any_sprite_batch_slot(const int layer_index, const s_asset_id tex_id, s_sprite_batch_collection &batch_collection);
+void write_to_sprite_batch_slot(const s_sprite_batch_slot_key slot_key, const s_sprite_batch_collection &batch_collection, const c_assets &assets, const cc::s_vec_2d pos, const cc::s_rect &src_rect, const cc::s_vec_2d origin = {}, const float rot = 0.0f, const cc::s_vec_2d scale = {1.0f, 1.0f}, const s_color &blend = s_color::white());
+void clear_sprite_batch_slot(const s_sprite_batch_slot_key slot_key, const s_sprite_batch_collection &batch_collection);
+void release_sprite_batch_slot(const s_sprite_batch_slot_key slot_key, s_sprite_batch_collection &batch_collection);
+
+inline cc::s_vec_2d cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
     return {
         ((pos.x - cam.pos.x) * cam.scale) + (window_size.x / 2.0f),
@@ -163,12 +106,15 @@ inline cc::s_vec_2d get_cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera
     };
 }
 
-inline cc::s_vec_2d get_screen_to_cam_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_int window_size)
+inline cc::s_vec_2d screen_to_cam_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
     return {
         ((pos.x - (window_size.x / 2.0f)) / cam.scale) + cam.pos.x,
         ((pos.y - (window_size.y / 2.0f)) / cam.scale) + cam.pos.y
     };
 }
+
+constexpr int k_title_sprite_batch_layer_cnt = static_cast<int>(ec_title_sprite_batch_layer::untitled) + 1;
+constexpr int k_gameplay_sprite_batch_layer_cnt = static_cast<int>(ec_gameplay_sprite_batch_layer::cursor) + 1;
 
 constexpr int k_sprite_quad_shader_prog_vert_cnt = 14;

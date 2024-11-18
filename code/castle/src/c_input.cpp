@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <castle_common/cc_debugging.h>
+#include <optional>
 
 static int get_glfw_key_code(const ec_key_code key_code)
 {
@@ -77,84 +78,121 @@ static int get_glfw_key_code(const ec_key_code key_code)
     return GLFW_KEY_UNKNOWN;
 }
 
-void c_input_state::refresh(GLFWwindow *const glfw_window)
+static u_keys_down_bits get_keys_down_bits(GLFWwindow *const glfw_window)
 {
-    //
-    // Keyboard
-    //
-    m_keys_down_bits = 0;
+    u_keys_down_bits keys_down_bits = 0;
 
     for (int i = 0; i < k_key_code_cnt; ++i)
     {
         if (glfwGetKey(glfw_window, get_glfw_key_code(static_cast<ec_key_code>(i))) == GLFW_PRESS)
         {
-            m_keys_down_bits |= static_cast<u_keys_down_bits>(1) << i;
+            keys_down_bits |= static_cast<u_keys_down_bits>(1) << i;
         }
     }
 
-    //
-    // Mouse
-    //
+    return keys_down_bits;
+}
+
+static cc::s_vec_2d get_mouse_pos(GLFWwindow *const glfw_window)
+{
     double mouse_x_dbl, mouse_y_dbl;
     glfwGetCursorPos(glfw_window, &mouse_x_dbl, &mouse_y_dbl);
-    m_mouse_pos = {static_cast<float>(mouse_x_dbl), static_cast<float>(mouse_y_dbl)};
+    return cc::s_vec_2d {static_cast<float>(mouse_x_dbl), static_cast<float>(mouse_y_dbl)};
+}
 
-    m_mouse_buttons_down_bits = 0;
+static u_mouse_buttons_down_bits get_mouse_buttons_down_bits(GLFWwindow *const glfw_window)
+{
+    u_mouse_buttons_down_bits mouse_buttons_down_bits = 0;
 
     for (int i = 0; i < k_mouse_button_code_cnt; ++i)
     {
         if (glfwGetMouseButton(glfw_window, i) == GLFW_PRESS)
         {
-            m_mouse_buttons_down_bits |= static_cast<u_mouse_buttons_down_bits>(1) << i;
+            mouse_buttons_down_bits |= static_cast<u_mouse_buttons_down_bits>(1) << i;
         }
     }
 
-    //
-    // Gamepad
-    //
-    m_gamepad_glfw_joystick_index = -1;
-    m_gamepad_buttons_down_bits = 0;
-    std::fill(std::begin(m_gamepad_axis_values), std::end(m_gamepad_axis_values), 0.0f);
-
-    // Search for the first active gamepad and if found update the gamepad state using it.
-    for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++)
-    {
-        if (!glfwJoystickPresent(i) || !glfwJoystickIsGamepad(i))
-        {
-            continue;
-        }
-
-        GLFWgamepadstate glfw_gamepad_state;
-
-        if (!glfwGetGamepadState(i, &glfw_gamepad_state))
-        {
-            std::cout << "ERROR: Failed to retrieve the state of gamepad with GLFW joystick index " << i << std::endl;
-            break;
-        }
-
-        m_gamepad_glfw_joystick_index = i;
-
-        // Store which gamepad buttons are down.
-        for (int j = 0; j < k_gamepad_button_code_cnt; j++)
-        {
-            if (glfw_gamepad_state.buttons[j] == GLFW_PRESS)
-            {
-                m_gamepad_buttons_down_bits |= static_cast<u_gamepad_buttons_down_bits>(1) << j;
-            }
-        }
-
-        // Store gamepad axis values.
-        for (int j = 0; j < k_gamepad_axis_code_cnt; j++)
-        {
-            m_gamepad_axis_values[j] = glfw_gamepad_state.axes[j];
-        }
-
-        break;
-    }
+    return mouse_buttons_down_bits;
 }
 
-void c_input_manager::refresh(GLFWwindow *const glfw_window)
+static int get_gamepad_glfw_joystick_index()
 {
-    m_input_state_last = m_input_state;
-    m_input_state.refresh(glfw_window);
+    for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++)
+    {
+        if (glfwJoystickPresent(i) && glfwJoystickIsGamepad(i))
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static std::optional<GLFWgamepadstate> get_glfw_gamepad_state(int gamepad_glfw_joystick_index)
+{
+    if (gamepad_glfw_joystick_index == -1)
+    {
+        return std::nullopt;
+    }
+
+    GLFWgamepadstate glfw_gamepad_state;
+
+    if (!glfwGetGamepadState(gamepad_glfw_joystick_index, &glfw_gamepad_state))
+    {
+        return std::nullopt;
+    }
+
+    return glfw_gamepad_state;
+}
+
+static u_gamepad_buttons_down_bits get_gamepad_buttons_down_bits(const std::optional<GLFWgamepadstate> &glfw_gamepad_state)
+{
+    if (!glfw_gamepad_state.has_value())
+    {
+        return 0;
+    }
+
+    u_gamepad_buttons_down_bits gamepad_buttons_down_bits = 0;
+
+    for (int i = 0; i < k_gamepad_button_code_cnt; i++)
+    {
+        if (glfw_gamepad_state->buttons[i] == GLFW_PRESS)
+        {
+            gamepad_buttons_down_bits |= static_cast<u_gamepad_buttons_down_bits>(1) << i;
+        }
+    }
+
+    return gamepad_buttons_down_bits;
+}
+
+static std::array<float, k_gamepad_axis_code_cnt> get_gamepad_axis_values(const std::optional<GLFWgamepadstate> &glfw_gamepad_state)
+{
+    if (!glfw_gamepad_state.has_value())
+    {
+        return {};
+    }
+
+    std::array<float, k_gamepad_axis_code_cnt> gamepad_axis_values;
+
+    for (int i = 0; i < k_gamepad_axis_code_cnt; i++)
+    {
+        gamepad_axis_values[i] = glfw_gamepad_state->axes[i];
+    }
+
+    return gamepad_axis_values;
+}
+
+s_input_state gen_input_state(GLFWwindow *const glfw_window)
+{
+    const int gamepad_glfw_joystick_index = get_gamepad_glfw_joystick_index();
+    const std::optional<GLFWgamepadstate> glfw_gamepad_state = get_glfw_gamepad_state(gamepad_glfw_joystick_index);
+
+    return {
+        get_keys_down_bits(glfw_window),
+        get_mouse_pos(glfw_window),
+        get_mouse_buttons_down_bits(glfw_window),
+        gamepad_glfw_joystick_index,
+        get_gamepad_buttons_down_bits(glfw_gamepad_state),
+        get_gamepad_axis_values(glfw_gamepad_state)
+    };
 }

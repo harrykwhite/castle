@@ -1,3 +1,10 @@
 #pragma once
 
-constexpr int k_max_mod_cnt = 127;
+#include "c_utils.h"
+
+constexpr int k_mod_limit = 127;
+
+struct s_mods_state
+{
+    c_bitset<k_mod_limit> mod_activity;
+};

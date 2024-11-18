@@ -18,19 +18,19 @@ public:
 
     inline bool is_bit_active(const int bit_index) const
     {
-        CC_CHECK(bit_index >= 0 && bit_index < BIT_CNT);
+        assert(bit_index >= 0 && bit_index < BIT_CNT);
         return m_bytes[bit_index / 8] & (static_cast<unsigned char>(1) << (bit_index % 8));
     }
 
     inline void activate_bit(const int bit_index)
     {
-        CC_CHECK(bit_index >= 0 && bit_index < BIT_CNT);
+        assert(bit_index >= 0 && bit_index < BIT_CNT);
         m_bytes[bit_index / 8] |= static_cast<unsigned char>(1) << (bit_index % 8);
     }
 
     inline void deactivate_bit(const int bit_index)
     {
-        CC_CHECK(bit_index >= 0 && bit_index < BIT_CNT);
+        assert(bit_index >= 0 && bit_index < BIT_CNT);
         m_bytes[bit_index / 8] &= ~(static_cast<unsigned char>(1) << (bit_index % 8));
     }
 

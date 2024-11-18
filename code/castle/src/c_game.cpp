@@ -1,89 +1,124 @@
 #include <castle/c_game.h>
 
 #include <iostream>
-#include <castle/c_input.h>
-#include <castle/c_player.h>
+#include <castle/c_scene.h>
 
-static void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
+struct s_game_cleanup_info
 {
-    glViewport(0, 0, width, height);
-}
+    bool glfw_initialized;
+    GLFWwindow *glfw_window;
 
-c_game::~c_game()
+    s_sprite_batch_collection *sprite_batch_collection;
+
+    c_assets *assets;
+};
+
+static void clean_game(const s_game_cleanup_info &info)
 {
-    if (m_glfw_initialized)
+    if (info.assets)
     {
-        if (m_glfw_window)
-        {
-            glfwDestroyWindow(m_glfw_window);
-        }
+        info.assets->dispose_all();
+    }
 
+    if (info.sprite_batch_collection)
+    {
+        dispose_sprite_batch_collection(*info.sprite_batch_collection);
+    }
+
+    if (info.glfw_window)
+    {
+        glfwDestroyWindow(info.glfw_window);
+    }
+
+    if (info.glfw_initialized)
+    {
         glfwTerminate();
     }
 }
 
-void c_game::run()
+static inline double calc_valid_frame_dur(const double frame_time, const double frame_time_last)
+{
+    const double dur = frame_time - frame_time_last;
+    return dur >= 0.0 && dur <= k_targ_tick_dur * 8.0 ? dur : 0.0;
+}
+
+static inline void glfw_window_size_callback(GLFWwindow *const window, const int width, const int height)
+{
+    glViewport(0, 0, width, height);
+}
+
+static inline cc::s_vec_2d_i get_glfw_window_size(GLFWwindow *const window)
+{
+    cc::s_vec_2d_i size;
+    glfwGetWindowSize(window, &size.x, &size.y);
+    return size;
+}
+
+void run_game()
 {
     //
     // Initialisation
     //
+    s_game_cleanup_info cleanup_info = {};
 
     // Initialise GLFW.
     if (!glfwInit())
     {
-        std::cout << "ERROR: Failed to initialize GLFW!" << std::endl;
+        std::cout << "ERROR: Failed to initialise GLFW!" << std::endl;
+        clean_game(cleanup_info);
         return;
     }
 
-    m_glfw_initialized = true;
-    std::cout << "Successfully initialized GLFW!" << std::endl;
+    cleanup_info.glfw_initialized = true;
 
     // Create the GLFW window.
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, k_gl_version_major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, k_gl_version_minor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, false); // Show the window later once other systems have been set up.
 
-    m_glfw_window = glfwCreateWindow(1280, 720, k_window_title.c_str(), nullptr, nullptr);
+    GLFWwindow *const glfw_window = glfwCreateWindow(1280, 720, k_window_title, nullptr, nullptr);
 
-    if (!m_glfw_window)
+    if (!glfw_window)
     {
         std::cout << "ERROR: Failed to create a GLFW window!" << std::endl;
+        clean_game(cleanup_info);
         return;
     }
 
-    glfwMakeContextCurrent(m_glfw_window);
-
-    std::cout << "Successfully created a GLFW window!" << std::endl;
+    glfwMakeContextCurrent(glfw_window);
 
     // Set GLFW window callbacks.
-    glfwSetWindowSizeCallback(m_glfw_window, glfw_window_size_callback);
+    glfwSetWindowSizeCallback(glfw_window, glfw_window_size_callback);
 
     // Initialise OpenGL function pointers.
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {
         std::cout << "ERROR: Failed to initialise OpenGL function pointers!" << std::endl;
+        clean_game(cleanup_info);
+        return;
     }
-
-    std::cout << "Successfully initialised OpenGL function pointers!" << std::endl;
 
     // Enable blending.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Load core assets.
-    if (!m_assets.load_core_group())
+    // Set up assets.
+    c_assets assets;
+
+    if (!assets.load_core_group())
     {
+        clean_game(cleanup_info);
         return;
     }
 
-    std::cout << "Successfully loaded game assets!" << std::endl;
+    cleanup_info.assets = &assets;
 
-    // Set up the title scene.
-    m_scene = make_scene(ec_scene_type::title);
+    // Create the title scene.
+    c_scene *scene = make_scene(ec_scene_type::title, assets);
 
     // Show the window now that things have been set up.
-    glfwShowWindow(m_glfw_window);
+    glfwShowWindow(glfw_window);
 
     //
     // Main Loop
@@ -91,9 +126,9 @@ void c_game::run()
     double frame_time = glfwGetTime();
     double frame_dur_accum = 0.0;
 
-    c_input_manager input_manager;
+    s_input_state_pair input_state_pair(gen_blank_input_state(), gen_blank_input_state());
 
-    while (!glfwWindowShouldClose(m_glfw_window))
+    while (!glfwWindowShouldClose(glfw_window))
     {
         glfwPollEvents();
 
@@ -103,43 +138,43 @@ void c_game::run()
         const double frame_dur = calc_valid_frame_dur(frame_time, frame_time_last);
         frame_dur_accum += frame_dur;
 
-        const int tick_count = frame_dur_accum / k_targ_tick_dur;
+        const int tick_cnt = frame_dur_accum / k_targ_tick_dur;
 
-        if (tick_count > 0)
+        const cc::s_vec_2d_i glfw_window_size = get_glfw_window_size(glfw_window);
+
+        if (tick_cnt > 0)
         {
-            cc::s_vec_2d_int window_size;
-            glfwGetWindowSize(m_glfw_window, &window_size.x, &window_size.y);
-
-            input_manager.refresh(m_glfw_window);
+            input_state_pair = {gen_input_state(glfw_window), input_state_pair.state_last};
 
             // Execute ticks.
+            int i = 0;
+
+            do
             {
-                int i = 0;
+                bool change_scene = false;
+                ec_scene_type change_scene_type;
 
-                do
+                scene->tick(input_state_pair, assets, glfw_window_size, change_scene, change_scene_type);
+
+                if (change_scene)
                 {
-                    // Run scene tick.
-                    bool change_scene = false;
-                    ec_scene_type change_scene_type;
-
-                    m_scene->on_tick(input_manager, m_assets, window_size, change_scene, change_scene_type);
-
-                    if (change_scene)
-                    {
-                        m_scene = make_scene(change_scene_type);
-                    }
-
-                    //
-                    frame_dur_accum -= k_targ_tick_dur;
-
-                    ++i;
+                    delete scene;
+                    scene = make_scene(change_scene_type, assets);
                 }
-                while (i < tick_count);
-            }
 
-            // Render.
-            glfwSwapBuffers(m_glfw_window);
-            m_scene->render(m_assets, window_size);
+                frame_dur_accum -= k_targ_tick_dur;
+
+                ++i;
+            }
+            while (i < tick_cnt);
         }
+
+        // Render.
+        glfwSwapBuffers(glfw_window);
+        scene->render(assets, glfw_window_size);
     }
+
+    delete scene;
+
+    clean_game(cleanup_info);
 }

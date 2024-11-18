@@ -1,137 +1,221 @@
 #include <castle/c_assets.h>
 
+#include <iostream>
 #include <fstream>
 #include <castle_common/cc_assets.h>
 #include <castle_common/cc_misc.h>
 
-c_asset_group::~c_asset_group()
+bool c_assets::load_core_group()
 {
-    for (int i = 0; i < m_shader_prog_cnt; ++i)
-    {
-        glDeleteProgram(m_shader_prog_gl_ids[i]);
-    }
-
-    glDeleteTextures(m_tex_cnt, m_tex_gl_ids.get());
+    assert(!m_group_activity.is_bit_active(0));
+    bool err = false;
+    m_groups[0] = make_core_asset_group(err);
+    m_group_activity.activate_bit(0);
+    return !err;
 }
 
-void c_asset_group::load_from_ifs(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
+void c_assets::load_and_dispose_mod_groups(const s_mods_state &mods_state)
 {
+    for (int i = 0; i < k_mod_limit; ++i)
+    {
+        const bool group_active = m_group_activity.is_bit_active(1 + i);
+        const bool mod_active = mods_state.mod_activity.is_bit_active(i);
+
+        if (group_active == mod_active)
+        {
+            continue;
+        }
+
+        if (mod_active)
+        {
+            // TODO: Load the mod group.
+        }
+        else
+        {
+            dispose_group(1 + i);
+        }
+    }
+}
+
+void c_assets::dispose_all()
+{
+    for (int i = 0; i < k_asset_group_cnt; ++i)
+    {
+        if (m_group_activity.is_bit_active(i))
+        {
+            dispose_group(i);
+        }
+    }
+}
+
+void c_assets::dispose_group(const int index)
+{
+    assert(index >= 0 && index < k_asset_group_cnt);
+    assert(m_group_activity.is_bit_active(index));
+
+    for (int i = 0; i < m_groups[index].shader_prog_cnt; ++i)
+    {
+        glDeleteProgram(m_groups[index].buf_shader_prog_gl_ids[i]);
+    }
+
+    glDeleteTextures(m_groups[index].tex_cnt, m_groups[index].buf_tex_gl_ids);
+
+    delete[] m_groups[index].buf;
+
+    m_groups[index] = {};
+
+    m_group_activity.deactivate_bit(index);
+}
+
+bool c_assets::load_mod_group(const int mod_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
+{
+    assert(mod_index >= 0 && mod_index < k_mod_limit);
+    assert(!m_group_activity.is_bit_active(1 + mod_index));
+    bool err = false;
+    m_groups[1 + mod_index] = make_asset_group(ifs, tex_cnt, shader_prog_cnt);
+    m_group_activity.activate_bit(1 + mod_index);
+    return err;
+}
+
+s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt)
+{
+    const int buf_tex_gl_ids_offs = 0;
+    const int buf_tex_sizes_offs = sizeof(u_gl_id) * tex_cnt;
+    const int buf_shader_prog_gl_ids_offs = buf_tex_sizes_offs + (sizeof(cc::s_vec_2d_i) * tex_cnt);
+
+    const int buf_size = buf_shader_prog_gl_ids_offs + (sizeof(u_gl_id) * shader_prog_cnt);
+    auto const buf = new u_byte[buf_size];
+
     //
     // Textures
     //
-    m_tex_cnt = tex_cnt;
 
-    // Generate OpenGL textures and store their IDs.
-    m_tex_gl_ids = std::make_unique<u_gl_id[]>(tex_cnt);
-    glGenTextures(tex_cnt, m_tex_gl_ids.get());
-
-    // Allocate a pixel data buffer, to be used as working space to store the pixel data for each texture.
-    const int px_data_buf_size = cc::k_tex_channel_cnt * cc::k_tex_size_limit.x * cc::k_tex_size_limit.y;
-    const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size);
+    // Generate textures and store their IDs.
+    const u_gl_id *const tex_gl_ids = [tex_cnt, buf]()
+    {
+        auto const tex_gl_ids = reinterpret_cast<u_gl_id *>(buf);
+        glGenTextures(tex_cnt, tex_gl_ids);
+        return tex_gl_ids;
+    }();
 
     // Read the sizes and pixel data of textures and finish setting them up.
-    m_tex_sizes = std::make_unique<cc::s_vec_2d_int[]>(tex_cnt);
-
-    for (int i = 0; i < tex_cnt; ++i)
+    const cc::s_vec_2d_i *const tex_sizes = [&ifs, tex_cnt, buf_tex_sizes_offs, buf, tex_gl_ids]()
     {
-        ifs.read(reinterpret_cast<char *>(&m_tex_sizes[i]), sizeof(cc::s_vec_2d_int));
+        auto const tex_sizes = reinterpret_cast<cc::s_vec_2d_i *>(buf + buf_tex_sizes_offs);
 
-        ifs.read(reinterpret_cast<char *>(px_data_buf.get()), cc::k_tex_channel_cnt * m_tex_sizes[i].x * m_tex_sizes[i].y);
+        // This buffer is working space for temporarily storing the pixel data of each texture.
+        const int px_data_buf_size = cc::k_tex_channel_cnt * cc::k_tex_size_limit.x * cc::k_tex_size_limit.y;
+        const auto px_data_buf = std::make_unique<unsigned char[]>(px_data_buf_size);
 
-        glBindTexture(GL_TEXTURE_2D, m_tex_gl_ids[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_tex_sizes[i].x, m_tex_sizes[i].y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
-    }
+        for (int i = 0; i < tex_cnt; ++i)
+        {
+            ifs.read(reinterpret_cast<char *>(&tex_sizes[i]), sizeof(cc::s_vec_2d_i));
+
+            ifs.read(reinterpret_cast<char *>(px_data_buf.get()), cc::k_tex_channel_cnt * tex_sizes[i].x * tex_sizes[i].y);
+
+            glBindTexture(GL_TEXTURE_2D, tex_gl_ids[i]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_sizes[i].x, tex_sizes[i].y, 0, GL_RGBA, GL_UNSIGNED_BYTE, px_data_buf.get());
+        }
+
+        return tex_sizes;
+    }();
 
     //
     // Shader Programs
     //
-    m_shader_prog_cnt = shader_prog_cnt;
-    m_shader_prog_gl_ids = std::make_unique<u_gl_id[]>(shader_prog_cnt);
-
-    for (int i = 0; i < shader_prog_cnt; ++i)
+    const u_gl_id *const shader_prog_gl_ids = [&ifs, shader_prog_cnt, buf_shader_prog_gl_ids_offs, buf]()
     {
-        // Create the shaders using the sources in the file.
-        const u_gl_id shader_gl_ids[2] = {
-            glCreateShader(GL_VERTEX_SHADER),
-            glCreateShader(GL_FRAGMENT_SHADER)
-        };
+        auto const shader_prog_gl_ids = reinterpret_cast<u_gl_id *>(buf + buf_shader_prog_gl_ids_offs);
 
-        for (int j = 0; j < CC_STATIC_ARRAY_LEN(shader_gl_ids); ++j)
+        for (int i = 0; i < shader_prog_cnt; ++i)
         {
-            int src_size;
-            ifs.read(reinterpret_cast<char *>(&src_size), sizeof(src_size));
+            // Create the shaders using the sources in the file.
+            const u_gl_id shader_gl_ids[2] = {
+                glCreateShader(GL_VERTEX_SHADER),
+                glCreateShader(GL_FRAGMENT_SHADER)
+            };
 
-            const auto src = std::make_unique<char[]>(src_size);
-            ifs.read(src.get(), src_size);
-
-            const char *const src_ptr = src.get();
-            glShaderSource(shader_gl_ids[j], 1, &src_ptr, nullptr);
-
-            glCompileShader(shader_gl_ids[j]);
-
-            // Check for a shader compilation error.
-            GLint gl_success;
-            glGetShaderiv(shader_gl_ids[j], GL_COMPILE_STATUS, &gl_success);
-
-            if (!gl_success)
+            for (int j = 0; j < CC_STATIC_ARRAY_LEN(shader_gl_ids); ++j)
             {
-                GLint gl_info_log_len;
-                glGetShaderiv(shader_gl_ids[j], GL_INFO_LOG_LENGTH, &gl_info_log_len);
+                const auto src_size = cc::read_from_ifs<int>(ifs);
 
-                std::cout << "ERROR: OpenGL shader compilation failed!" << std::endl;
+                const auto src = std::make_unique<char[]>(src_size);
+                ifs.read(src.get(), src_size);
 
-                if (gl_info_log_len > 0)
+                const char *const src_ptr = src.get();
+                glShaderSource(shader_gl_ids[j], 1, &src_ptr, nullptr);
+
+                glCompileShader(shader_gl_ids[j]);
+
+                // Check for a shader compilation error.
+                GLint gl_success;
+                glGetShaderiv(shader_gl_ids[j], GL_COMPILE_STATUS, &gl_success);
+
+                if (!gl_success)
                 {
-                    const auto info_log = std::make_unique<char[]>(gl_info_log_len + 1);
-                    glGetShaderInfoLog(shader_gl_ids[j], gl_info_log_len + 1, nullptr, info_log.get());
+                    GLint gl_info_log_len;
+                    glGetShaderiv(shader_gl_ids[j], GL_INFO_LOG_LENGTH, &gl_info_log_len);
 
-                    std::cout << "\n\n" << info_log << std::endl;
+                    std::cout << "ERROR: OpenGL shader compilation failed!" << std::endl;
+
+                    if (gl_info_log_len > 0)
+                    {
+                        const auto info_log = std::make_unique<char[]>(gl_info_log_len + 1);
+                        glGetShaderInfoLog(shader_gl_ids[j], gl_info_log_len + 1, nullptr, info_log.get());
+
+                        std::cout << "\n\n" << info_log << std::endl;
+                    }
                 }
+            }
+
+            // Create the shader program using the shaders.
+            shader_prog_gl_ids[i] = glCreateProgram();
+
+            for (int j = 0; j < CC_STATIC_ARRAY_LEN(shader_gl_ids); ++j)
+            {
+                glAttachShader(shader_prog_gl_ids[i], shader_gl_ids[j]);
+            }
+
+            glLinkProgram(shader_prog_gl_ids[i]);
+
+            // Delete the shaders as they're no longer needed.
+            for (int j = CC_STATIC_ARRAY_LEN(shader_gl_ids) - 1; j >= 0; --j)
+            {
+                glDeleteShader(shader_gl_ids[j]);
             }
         }
 
-        // Create the shader program using the shaders.
-        m_shader_prog_gl_ids[i] = glCreateProgram();
+        return shader_prog_gl_ids;
+    }();
 
-        for (int j = 0; j < CC_STATIC_ARRAY_LEN(shader_gl_ids); ++j)
-        {
-            glAttachShader(m_shader_prog_gl_ids[i], shader_gl_ids[j]);
-        }
-
-        glLinkProgram(m_shader_prog_gl_ids[i]);
-
-        // Delete the shaders as they're no longer needed.
-        for (int j = CC_STATIC_ARRAY_LEN(shader_gl_ids) - 1; j >= 0; --j)
-        {
-            glDeleteShader(shader_gl_ids[j]);
-        }
-    }
+    return {
+        buf,
+        tex_gl_ids,
+        tex_sizes,
+        shader_prog_gl_ids,
+        tex_cnt,
+        shader_prog_cnt
+    };
 }
 
-bool c_assets::load_core_group()
+s_asset_group make_core_asset_group(bool &err)
 {
     // Open the asset file.
     std::ifstream ifs(k_core_assets_file_name, std::ios::binary);
 
     if (!ifs.is_open())
     {
-        std::cout << "ERROR: Failed to open \"" << k_core_assets_file_name << "\"!" << std::endl;
-        return false;
+        //std::cout << "ERROR: Failed to open \"" << k_core_assets_file_name << "\"!" << std::endl;
+        err = true;
+        return {};
     }
 
     // Read the file header and get asset counts.
-    int tex_cnt;
-    ifs.read(reinterpret_cast<char *>(&tex_cnt), sizeof(tex_cnt));
+    const auto tex_cnt = cc::read_from_ifs<int>(ifs);
+    const auto shader_prog_cnt = cc::read_from_ifs<int>(ifs);
 
-    int shader_prog_cnt;
-    ifs.read(reinterpret_cast<char *>(&shader_prog_cnt), sizeof(shader_prog_cnt));
-
-    // Load asset data.
-    m_groups[0].load_from_ifs(ifs, tex_cnt, shader_prog_cnt);
-
-    ifs.close();
-
-    return true;
+    // Make the asset group from the rest of the file.
+    return make_asset_group(ifs, tex_cnt, shader_prog_cnt);
 }

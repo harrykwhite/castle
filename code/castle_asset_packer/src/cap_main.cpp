@@ -37,7 +37,7 @@ static bool pack_textures(std::ofstream &assets_file_ofs, std::string &src_asset
         src_asset_file_path.replace(src_assets_dir_len, std::string::npos, k_src_tex_file_path_ends[i]);
 
         // Load and write the texture.
-        cc::s_vec_2d_int tex_size;
+        cc::s_vec_2d_i tex_size;
         stbi_uc *const px_data = stbi_load(src_asset_file_path.c_str(), &tex_size.x, &tex_size.y, nullptr, cc::k_tex_channel_cnt);
 
         if (!px_data)

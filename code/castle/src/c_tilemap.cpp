@@ -1,17 +1,17 @@
 #include <castle/c_tilemap.h>
 
-c_tilemap::c_tilemap(c_renderer &renderer)
+c_tilemap::c_tilemap(s_sprite_batch_collection &sprite_batch_collection)
 {
     for (int y = 0; y < k_tilemap_size; ++y)
     {
         for (int x = 0; x < k_tilemap_size; ++x)
         {
-            m_sb_slot_keys[y][x] = renderer.take_any_available_sprite_batch_slot(static_cast<int>(ec_title_sprite_batch_layer::untitled), s_asset_id::make_core_tex_id(ec_core_tex::dirt_tile));
+            m_sb_slot_keys[y][x] = take_any_sprite_batch_slot(static_cast<int>(ec_title_sprite_batch_layer::untitled), s_asset_id::make_core_tex_id(ec_core_tex::dirt_tile), sprite_batch_collection);
         }
     }
 }
 
-void c_tilemap::rewrite_render_data(const c_renderer &renderer, const c_assets &assets)
+void c_tilemap::write_render_data(const s_sprite_batch_collection &sprite_batch_collection, const c_assets &assets)
 {
     // NOTE: Might be more efficient to just move through the thing in terms of bytes, not bits. You can check whether a byte is clear before checking bits.
     if (m_tile_render_rewrite.is_empty())
@@ -19,12 +19,7 @@ void c_tilemap::rewrite_render_data(const c_renderer &renderer, const c_assets &
         return;
     }
 
-    s_sprite_batch_slot_write_data write_data = {};
-    write_data.scale = {1.0f, 1.0f};
-    write_data.origin = {0.0f, 0.0f};
-    write_data.src_rect.width = static_cast<float>(k_tile_size);
-    write_data.src_rect.height = static_cast<float>(k_tile_size);
-    write_data.blend = s_color::make_white();
+    const cc::s_rect src_rect = {0, 0, k_tile_size, k_tile_size};
 
     for (int y = 0; y < k_tilemap_size; ++y)
     {
@@ -37,12 +32,12 @@ void c_tilemap::rewrite_render_data(const c_renderer &renderer, const c_assets &
 
             if (m_tile_activity.is_bit_active((y * k_tilemap_size) + x))
             {
-                write_data.pos = {static_cast<float>(x * k_tile_size), static_cast<float>(y * k_tile_size)};
-                renderer.write_to_sprite_batch_slot(m_sb_slot_keys[y][x], write_data, assets);
+                const cc::s_vec_2d pos = {static_cast<float>(x * k_tile_size), static_cast<float>(y * k_tile_size)};
+                write_to_sprite_batch_slot(m_sb_slot_keys[y][x], sprite_batch_collection, assets, pos, src_rect);
             }
             else
             {
-                renderer.clear_sprite_batch_slot(m_sb_slot_keys[y][x]);
+                clear_sprite_batch_slot(m_sb_slot_keys[y][x], sprite_batch_collection);
             }
         }
     }

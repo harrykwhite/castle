@@ -9,12 +9,12 @@ struct s_vec_2d
 {
     float x, y;
 
-    s_vec_2d operator+(const s_vec_2d &other) const
+    constexpr s_vec_2d operator+(const s_vec_2d &other) const
     {
         return {x + other.x, y + other.y};
     }
 
-    s_vec_2d &operator+=(const s_vec_2d &other)
+    constexpr s_vec_2d &operator+=(const s_vec_2d &other)
     {
         x += other.x;
         y += other.y;
@@ -22,12 +22,12 @@ struct s_vec_2d
         return *this;
     }
 
-    s_vec_2d operator-(const s_vec_2d &other) const
+    constexpr s_vec_2d operator-(const s_vec_2d &other) const
     {
         return {x - other.x, y - other.y};
     }
 
-    s_vec_2d &operator-=(const s_vec_2d &other)
+    constexpr s_vec_2d &operator-=(const s_vec_2d &other)
     {
         x -= other.x;
         y -= other.y;
@@ -35,12 +35,12 @@ struct s_vec_2d
         return *this;
     }
 
-    s_vec_2d operator*(const float scalar) const
+    constexpr s_vec_2d operator*(const float scalar) const
     {
         return {x * scalar, y * scalar};
     }
 
-    s_vec_2d &operator*=(const float scalar)
+    constexpr s_vec_2d &operator*=(const float scalar)
     {
         x *= scalar;
         y *= scalar;
@@ -48,12 +48,12 @@ struct s_vec_2d
         return *this;
     }
 
-    s_vec_2d operator/(const float scalar) const
+    constexpr s_vec_2d operator/(const float scalar) const
     {
         return {x / scalar, y / scalar};
     }
 
-    s_vec_2d &operator/=(const float scalar)
+    constexpr s_vec_2d &operator/=(const float scalar)
     {
         x /= scalar;
         y /= scalar;
@@ -61,27 +61,32 @@ struct s_vec_2d
         return *this;
     }
 
-    bool operator==(const s_vec_2d &other) const
+    constexpr s_vec_2d operator-() const
+    {
+        return {-x, -y};
+    }
+
+    constexpr bool operator==(const s_vec_2d &other) const
     {
         return x == other.x && y == other.y;
     }
 
-    bool operator!=(const s_vec_2d &other) const
+    constexpr bool operator!=(const s_vec_2d &other) const
     {
         return !(*this == other);
     }
 };
 
-struct s_vec_2d_int
+struct s_vec_2d_i
 {
     int x, y;
 
-    s_vec_2d_int operator+(const s_vec_2d_int &other) const
+    constexpr s_vec_2d_i operator+(const s_vec_2d_i &other) const
     {
         return {x + other.x, y + other.y};
     }
 
-    s_vec_2d_int &operator+=(const s_vec_2d_int &other)
+    constexpr s_vec_2d_i &operator+=(const s_vec_2d_i &other)
     {
         x += other.x;
         y += other.y;
@@ -89,12 +94,12 @@ struct s_vec_2d_int
         return *this;
     }
 
-    s_vec_2d_int operator-(const s_vec_2d_int &other) const
+    constexpr s_vec_2d_i operator-(const s_vec_2d_i &other) const
     {
         return {x - other.x, y - other.y};
     }
 
-    s_vec_2d_int &operator-=(const s_vec_2d_int &other)
+    constexpr s_vec_2d_i &operator-=(const s_vec_2d_i &other)
     {
         x -= other.x;
         y -= other.y;
@@ -102,12 +107,12 @@ struct s_vec_2d_int
         return *this;
     }
 
-    s_vec_2d_int operator*(const int scalar) const
+    constexpr s_vec_2d_i operator*(const int scalar) const
     {
         return {x * scalar, y * scalar};
     }
 
-    s_vec_2d_int &operator*=(const int scalar)
+    constexpr s_vec_2d_i &operator*=(const int scalar)
     {
         x *= scalar;
         y *= scalar;
@@ -115,12 +120,12 @@ struct s_vec_2d_int
         return *this;
     }
 
-    s_vec_2d_int operator/(const int scalar) const
+    constexpr s_vec_2d_i operator/(const int scalar) const
     {
         return {x / scalar, y / scalar};
     }
 
-    s_vec_2d_int &operator/=(const int scalar)
+    constexpr s_vec_2d_i &operator/=(const int scalar)
     {
         x /= scalar;
         y /= scalar;
@@ -128,12 +133,17 @@ struct s_vec_2d_int
         return *this;
     }
 
-    bool operator==(const s_vec_2d_int &other) const
+    constexpr s_vec_2d_i operator-() const
+    {
+        return {-x, -y};
+    }
+
+    constexpr bool operator==(const s_vec_2d_i &other) const
     {
         return x == other.x && y == other.y;
     }
 
-    bool operator!=(const s_vec_2d_int &other) const
+    constexpr bool operator!=(const s_vec_2d_i &other) const
     {
         return !(*this == other);
     }
@@ -141,7 +151,7 @@ struct s_vec_2d_int
 
 struct s_matrix_4x4
 {
-    static inline s_matrix_4x4 make_identity()
+    static inline s_matrix_4x4 identity()
     {
         s_matrix_4x4 mat = {};
         mat[0][0] = 1.0f;
@@ -151,7 +161,7 @@ struct s_matrix_4x4
         return mat;
     }
 
-    static inline s_matrix_4x4 make_ortho(const float left, const float right, const float bottom, const float top, const float near, const float far)
+    static inline s_matrix_4x4 ortho(const float left, const float right, const float bottom, const float top, const float near, const float far)
     {
         s_matrix_4x4 mat = {};
         mat[0][0] = 2.0f / (right - left);
@@ -203,7 +213,7 @@ struct s_rect
     }
 };
 
-struct s_rect_float
+struct s_rect_f
 {
     float x, y;
     float width, height;
@@ -218,17 +228,17 @@ struct s_rect_float
         return y + height;
     }
 
-    inline bool intersects(const s_rect_float &other) const
+    inline bool intersects(const s_rect_f &other) const
     {
         return get_right() > other.x && other.get_right() > x && get_bottom() > other.y && other.get_bottom() > y;
     }
 
-    bool operator==(const s_rect_float &other) const
+    bool operator==(const s_rect_f &other) const
     {
         return x == other.x && y == other.y && width == other.width && height == other.height;
     }
 
-    bool operator!=(const s_rect_float &other) const
+    bool operator!=(const s_rect_f &other) const
     {
         return !(*this == other);
     }

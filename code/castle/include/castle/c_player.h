@@ -1,41 +1,59 @@
 #pragma once
 
+#include <functional>
 #include "c_input.h"
 #include "c_rendering.h"
 #include "c_assets.h"
 #include "c_tilemap.h"
 
-constexpr s_asset_id k_player_tex_id = s_asset_id::make_core_tex_id(ec_core_tex::player);
-constexpr cc::s_vec_2d k_player_origin = {0.5f, 0.5f};
 constexpr float k_player_move_spd = 2.0f;
 
-class c_player_ent
+using u_collider_maker = std::function<cc::s_rect_f(const cc::s_vec_2d pos)>;
+
+struct s_player_ent
 {
-public:
-    c_player_ent(c_renderer &renderer);
+    s_sprite_batch_slot_key sb_slot_key;
+    cc::s_vec_2d pos;
+    cc::s_vec_2d vel;
+    float rot;
+    u_collider_maker collider_maker;
 
-    void proc_movement(const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets);
-    void update_rot(const c_input_manager &input_manager, const s_camera &cam, const cc::s_vec_2d_int window_size);
-    void rewrite_render_data(const c_renderer &renderer, const c_assets &assets);
-
-    inline cc::s_vec_2d get_pos() const
+    s_player_ent(const s_sprite_batch_slot_key sb_slot_key, cc::s_vec_2d pos, cc::s_vec_2d vel, const float rot, const u_collider_maker collider_maker)
+        : sb_slot_key(sb_slot_key), pos(pos), vel(vel), rot(rot), collider_maker(collider_maker)
     {
-        return m_pos;
     }
 
-    inline cc::s_rect_float get_collider(const c_assets &assets, const cc::s_vec_2d offs = {}) const
+    inline s_player_ent with_pos(const cc::s_vec_2d pos) const
     {
-        const cc::s_vec_2d_int tex_size = assets.get_tex_size(k_player_tex_id);
-        return {m_pos.x - (k_player_origin.x * tex_size.x) + offs.x, m_pos.y - (k_player_origin.y * tex_size.y) + offs.y, static_cast<float>(tex_size.x), static_cast<float>(tex_size.y)};
+        return {sb_slot_key, pos, vel, rot, collider_maker};
     }
 
-private:
-    s_sprite_batch_slot_key m_sb_slot_key;
+    inline s_player_ent with_vel(const cc::s_vec_2d vel) const
+    {
+        return {sb_slot_key, pos, vel, rot, collider_maker};
+    }
 
-    cc::s_vec_2d m_pos = {};
-    cc::s_vec_2d m_vel = {};
-
-    float m_rot = 0.0f;
-
-    void proc_hor_and_ver_tile_collisions(const c_tilemap &tilemap, const c_assets &assets);
+    inline s_player_ent with_rot(const float rot) const
+    {
+        return {sb_slot_key, pos, vel, rot, collider_maker};
+    }
 };
+
+s_player_ent make_player_ent(const cc::s_vec_2d pos, s_sprite_batch_collection &batch_collection, const c_assets &assets);
+s_player_ent player_ent_after_tick(const s_player_ent &ent, const s_input_state_pair &input_state_pair, const c_tilemap &tilemap, const c_assets &assets, const s_camera &cam, const cc::s_vec_2d_i window_size);
+void write_player_ent_render_data(const s_player_ent &player_ent, const s_sprite_batch_collection &sb_collection, const c_assets &assets);
+
+cc::s_vec_2d vel_after_tile_collision_proc(const cc::s_vec_2d vel, const cc::s_vec_2d pos, const u_collider_maker collider_maker, const c_tilemap &tilemap);
+
+inline u_collider_maker gen_collider_maker(const cc::s_vec_2d offs, const cc::s_vec_2d size)
+{
+    assert(size.x > 0.0f && size.y > 0.0f);
+
+    return [offs, size](const cc::s_vec_2d pos)
+    {
+        return cc::s_rect_f {pos.x + offs.x, pos.y + offs.y, size.x, size.y};
+    };
+}
+
+constexpr s_asset_id k_player_ent_tex_id = s_asset_id::make_core_tex_id(ec_core_tex::player);
+constexpr cc::s_vec_2d k_player_ent_origin = {0.5f, 0.5f};

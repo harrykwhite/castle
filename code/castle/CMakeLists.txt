@@ -1,8 +1,10 @@
 project(castle)
 
+set(CMAKE_WIN32_EXECUTABLE ON)
+
 find_package(glfw3 CONFIG REQUIRED)
 
-add_executable(castle
+add_executable(castle WIN32
 	src/c_entry.cpp
 
 	src/c_game.cpp
@@ -44,6 +46,8 @@ target_include_directories(castle PRIVATE
 )
 
 target_link_libraries(castle PRIVATE glfw castle_common)
+
+target_link_options(castle PRIVATE /ENTRY:mainCRTStartup)
 
 add_dependencies(castle castle_asset_packer)
 
