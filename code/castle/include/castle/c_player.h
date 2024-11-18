@@ -6,7 +6,9 @@
 #include "c_assets.h"
 #include "c_tilemap.h"
 
-constexpr float k_player_move_spd = 2.0f;
+constexpr int k_player_inv_hotbar_slot_cnt = 7;
+
+constexpr float k_player_ent_move_spd = 2.0f;
 
 using u_collider_maker = std::function<cc::s_rect_f(const cc::s_vec_2d pos)>;
 

@@ -11,6 +11,7 @@ enum class ec_sprite_batch_layer
 {
     player,
     tiles,
+    player_inv_hotbar,
     cursor
 };
 

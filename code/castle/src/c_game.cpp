@@ -123,7 +123,7 @@ void run_game()
     cleanup_info.assets = &assets;
 
     // Set up sprite batch collection.
-    s_sprite_batch_collection sprite_batch_collection = make_sprite_batch_collection({1, 8, 1}, 2);
+    s_sprite_batch_collection sprite_batch_collection = make_sprite_batch_collection({1, 8, 1, 1}, 2);
 
     // Create the game world.
     s_world world = make_world(sprite_batch_collection, assets);
@@ -166,7 +166,7 @@ void run_game()
             do
             {
                 world_tick(world, input_state_pair, sprite_batch_collection, assets, glfw_window_size);
-                write_ui_render_data(ui, sprite_batch_collection, assets, input_state_pair, world.cam);
+                write_ui_render_data(ui, sprite_batch_collection, assets, input_state_pair, world.cam, glfw_window_size);
 
                 frame_dur_accum -= k_targ_tick_dur;
                 ++i;

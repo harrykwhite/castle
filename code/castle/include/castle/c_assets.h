@@ -18,6 +18,7 @@ enum class ec_core_tex
     player,
     dirt_tile,
     stone_tile,
+    inv_slot,
     cursor
 };
 

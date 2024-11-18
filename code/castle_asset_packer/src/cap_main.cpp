@@ -1,3 +1,5 @@
+// NOTE: Consider searching the assets directory for asset files as opposed to the paths being hardcoded.
+
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -20,6 +22,7 @@ const std::string k_src_tex_file_path_ends[] = {
     "/textures/characters/player.png",
     "/textures/tiles/dirt.png",
     "/textures/tiles/stone.png",
+    "/textures/ui/inv_slot.png",
     "/textures/ui/cursor.png"
 };
 

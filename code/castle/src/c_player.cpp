@@ -20,7 +20,7 @@ s_player_ent player_ent_after_tick(const s_player_ent &ent, const s_input_state_
         static_cast<float>(is_key_down(ec_key_code::d, input_state_pair)) - static_cast<float>(is_key_down(ec_key_code::a, input_state_pair)),
         static_cast<float>(is_key_down(ec_key_code::s, input_state_pair)) - static_cast<float>(is_key_down(ec_key_code::w, input_state_pair))
     };
-    const cc::s_vec_2d move_vel = move_axis * k_player_move_spd;
+    const cc::s_vec_2d move_vel = move_axis * k_player_ent_move_spd;
     const cc::s_vec_2d move_vel_after_tile_collisions = vel_after_tile_collision_proc(move_vel, ent.pos, ent.collider_maker, tilemap);
     const s_player_ent player_ent_after_move = ent.with_pos(ent.pos + move_vel_after_tile_collisions);
 
