@@ -75,7 +75,7 @@ public:
     // Provide nullptr as the cam argument if not wanting to draw with a camera view matrix.
     void draw(const c_assets &assets, const cc::s_vec_2d_i window_size, const s_camera *const cam) const;
 
-    int take_any_slot(const s_asset_id tex_id);
+    int TakeAnySlot(const s_asset_id tex_id);
     void release_slot(const int slot_index);
     void write_to_slot(const int slot_index, const c_assets &assets, const cc::s_vec_2d pos, const cc::s_rect &src_rect, const cc::s_vec_2d origin, const float rot, const cc::s_vec_2d scale, const float alpha) const;
     void clear_slot(const int slot_index) const;

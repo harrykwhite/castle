@@ -3,7 +3,6 @@
 #include <array>
 #include <GLFW/glfw3.h>
 #include <castle_common/cc_math.h>
-#include <castle/c_game.h>
 
 enum class ec_key_code
 {

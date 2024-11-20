@@ -4,6 +4,17 @@
 #include <fstream>
 #include <castle_common/cc_misc.h>
 
+c_assets::~c_assets()
+{
+    for (int i = 0; i < k_asset_group_cnt; ++i)
+    {
+        if (m_group_activity.test(i))
+        {
+            dispose_group(i);
+        }
+    }
+}
+
 bool c_assets::load_core_group()
 {
     assert(!m_group_activity.test(0));
@@ -32,17 +43,6 @@ void c_assets::load_and_dispose_mod_groups(const s_mods_state &mods_state)
         else
         {
             dispose_group(1 + i);
-        }
-    }
-}
-
-void c_assets::dispose_all()
-{
-    for (int i = 0; i < k_asset_group_cnt; ++i)
-    {
-        if (m_group_activity.test(i))
-        {
-            dispose_group(i);
         }
     }
 }

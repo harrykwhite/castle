@@ -153,7 +153,7 @@ void c_sprite_batch::draw(const c_assets &assets, const cc::s_vec_2d_i window_si
     glDrawElements(GL_TRIANGLES, 6 * m_slot_cnt, GL_UNSIGNED_SHORT, nullptr);
 }
 
-int c_sprite_batch::take_any_slot(const s_asset_id tex_id)
+int c_sprite_batch::TakeAnySlot(const s_asset_id tex_id)
 {
     // If there are no inactive slots, don't go any further.
     if (m_slot_activity.is_full())
@@ -612,7 +612,7 @@ s_sprite_batch_slot_key c_renderer::take_any_sprite_batch_slot(const int layer_i
     for (int i = 0; i < layer_info.sprite_batch_cnt; ++i)
     {
         const int batch_index = layer_info.begin_sprite_batch_index + i;
-        const int slot_index = m_sprite_batches[batch_index].take_any_slot(tex_id);
+        const int slot_index = m_sprite_batches[batch_index].TakeAnySlot(tex_id);
 
         if (slot_index != -1)
         {

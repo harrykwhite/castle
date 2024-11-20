@@ -2,5 +2,6 @@
 
 int main()
 {
-    run_game();
+    c_game game;
+    game.run();
 }

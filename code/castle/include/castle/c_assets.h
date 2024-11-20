@@ -87,9 +87,10 @@ struct s_asset_id
 class c_assets
 {
 public:
+    ~c_assets();
+    
     bool load_core_group();
     void load_and_dispose_mod_groups(const s_mods_state &mods_state);
-    void dispose_all();
 
     inline u_gl_id get_tex_gl_id(const s_asset_id id) const
     {
