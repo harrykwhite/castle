@@ -35,9 +35,6 @@ add_executable(castle
 	src/c_utils.cpp
 	include/castle/c_utils.h
 	
-	src/c_world.cpp
-	include/castle/c_world.h
-	
 	src/c_ui.cpp
 	include/castle/c_ui.h
 	

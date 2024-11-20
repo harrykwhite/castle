@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <memory>
 #include <cassert>
+#include <bitset>
 #include <castle_common/cc_math.h>
 #include <castle_common/cc_io.h>
 #include <castle_common/cc_assets.h>
@@ -25,7 +26,15 @@ enum class ec_core_tex
 
 enum class ec_core_shader_prog
 {
-    sprite_quad
+    sprite_quad,
+    char_quad
+};
+
+enum class ec_core_font
+{
+    eb_garamond_36,
+    eb_garamond_48,
+    eb_garamond_72
 };
 
 struct s_asset_group
@@ -62,6 +71,11 @@ struct s_asset_id
     static constexpr s_asset_id make_core_shader_prog_id(const ec_core_shader_prog prog)
     {
         return {0, static_cast<int>(prog)};
+    }
+
+    static constexpr s_asset_id make_core_font_id(const ec_core_font font)
+    {
+        return {0, static_cast<int>(font)};
     }
 
     bool operator==(const s_asset_id &other) const
@@ -109,7 +123,7 @@ public:
 
 private:
     s_asset_group m_groups[k_asset_group_cnt] = {};
-    c_bitset<k_asset_group_cnt> m_group_activity;
+    std::bitset<k_asset_group_cnt> m_group_activity;
 
     static inline void asset_id_assertions(const s_asset_id id, const int asset_cnt)
     {

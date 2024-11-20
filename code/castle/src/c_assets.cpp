@@ -6,10 +6,10 @@
 
 bool c_assets::load_core_group()
 {
-    assert(!m_group_activity.is_bit_active(0));
+    assert(!m_group_activity.test(0));
     bool err = false;
     m_groups[0] = make_core_asset_group(err);
-    m_group_activity.activate_bit(0);
+    m_group_activity.set(0);
     return !err;
 }
 
@@ -17,8 +17,8 @@ void c_assets::load_and_dispose_mod_groups(const s_mods_state &mods_state)
 {
     for (int i = 0; i < k_mod_limit; ++i)
     {
-        const bool group_active = m_group_activity.is_bit_active(1 + i);
-        const bool mod_active = mods_state.mod_activity.is_bit_active(i);
+        const bool group_active = m_group_activity.test(1 + i);
+        const bool mod_active = mods_state.mod_activity.test(i);
 
         if (group_active == mod_active)
         {
@@ -40,7 +40,7 @@ void c_assets::dispose_all()
 {
     for (int i = 0; i < k_asset_group_cnt; ++i)
     {
-        if (m_group_activity.is_bit_active(i))
+        if (m_group_activity.test(i))
         {
             dispose_group(i);
         }
@@ -50,7 +50,7 @@ void c_assets::dispose_all()
 void c_assets::dispose_group(const int index)
 {
     assert(index >= 0 && index < k_asset_group_cnt);
-    assert(m_group_activity.is_bit_active(index));
+    assert(m_group_activity.test(index));
 
     glDeleteTextures(m_groups[index].font_cnt, m_groups[index].buf_font_tex_gl_ids);
 
@@ -65,16 +65,16 @@ void c_assets::dispose_group(const int index)
 
     m_groups[index] = {};
 
-    m_group_activity.deactivate_bit(index);
+    m_group_activity.reset(index);
 }
 
 bool c_assets::load_mod_group(const int mod_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt)
 {
     assert(mod_index >= 0 && mod_index < k_mod_limit);
-    assert(!m_group_activity.is_bit_active(1 + mod_index));
+    assert(!m_group_activity.test(1 + mod_index));
     bool err = false;
     m_groups[1 + mod_index] = make_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
-    m_group_activity.activate_bit(1 + mod_index);
+    m_group_activity.set(1 + mod_index);
     return err;
 }
 

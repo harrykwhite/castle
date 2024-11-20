@@ -6,11 +6,11 @@ layout (location = 2) in vec2 a_size;
 layout (location = 3) in float a_rot;
 layout (location = 4) in float a_tex_index;
 layout (location = 5) in vec2 a_tex_coord;
-layout (location = 6) in vec4 a_blend;
+layout (location = 6) in float a_alpha;
 
 out flat int v_tex_index;
 out vec2 v_tex_coord;
-out vec4 v_blend;
+out float v_alpha;
 
 uniform mat4 u_view;
 uniform mat4 u_proj;
@@ -31,5 +31,5 @@ void main()
 
     v_tex_index = int(a_tex_index);
     v_tex_coord = a_tex_coord;
-    v_blend = a_blend;
+    v_alpha = a_alpha;
 }

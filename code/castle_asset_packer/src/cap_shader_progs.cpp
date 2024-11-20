@@ -9,7 +9,8 @@ struct s_shader_prog_pack_info
 };
 
 const s_shader_prog_pack_info k_shader_prog_pack_infos[] = {
-    {"/shaders/sprite_quad.vert", "/shaders/sprite_quad.frag"}
+    {"/shaders/sprite_quad.vert", "/shaders/sprite_quad.frag"},
+    {"/shaders/char_quad.vert", "/shaders/char_quad.frag"}
 };
 
 const int k_shader_prog_cnt = CC_STATIC_ARRAY_LEN(k_shader_prog_pack_infos);

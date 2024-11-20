@@ -11,28 +11,28 @@ constexpr int k_tilemap_size = 24;
 class c_tilemap
 {
 public:
-    c_tilemap(s_sprite_batch_collection &sprite_batch_collection);
+    c_tilemap(c_renderer &renderer);
 
-    void write_render_data(const s_sprite_batch_collection &sprite_batch_collection, const c_assets &assets);
+    void write_render_data(const c_renderer &renderer, const c_assets &assets);
 
     inline void place_tile(const int x, const int y)
     {
         assert(x >= 0 && y >= 0 && x < k_tilemap_size && y < k_tilemap_size);
-        m_tile_activity.activate_bit((y * k_tilemap_size) + x);
-        m_tile_render_rewrite.activate_bit((y * k_tilemap_size) + x);
+        m_tile_activity.set((y * k_tilemap_size) + x);
+        m_tile_render_rewrite.set((y * k_tilemap_size) + x);
     }
 
     inline void remove_tile(const int x, const int y)
     {
         assert(x >= 0 && y >= 0 && x < k_tilemap_size && y < k_tilemap_size);
-        m_tile_activity.deactivate_bit((y * k_tilemap_size) + x);
-        m_tile_render_rewrite.activate_bit((y * k_tilemap_size) + x);
+        m_tile_activity.reset((y * k_tilemap_size) + x);
+        m_tile_render_rewrite.set((y * k_tilemap_size) + x);
     }
 
     inline bool is_tile_active(const int x, const int y) const
     {
         assert(x >= 0 && y >= 0 && x < k_tilemap_size && y < k_tilemap_size);
-        return m_tile_activity.is_bit_active((y * k_tilemap_size) + x);
+        return m_tile_activity.test((y * k_tilemap_size) + x);
     }
 
     inline cc::s_rect_f get_tile_collider(const int x, const int y) const
@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    c_bitset<k_tilemap_size * k_tilemap_size> m_tile_activity; // TEMP: Would be good to embed this information within the tile ID data once we have that.
-    c_bitset<k_tilemap_size * k_tilemap_size> m_tile_render_rewrite; // TEMP: A range-based refresh might work better, or even building a list of tiles to refresh.
+    std::bitset<k_tilemap_size * k_tilemap_size> m_tile_activity; // TEMP: Would be good to embed this information within the tile ID data once we have that.
+    std::bitset<k_tilemap_size * k_tilemap_size> m_tile_render_rewrite; // TEMP: A range-based refresh might work better, or even building a list of tiles to refresh.
     s_sprite_batch_slot_key m_sb_slot_keys[k_tilemap_size][k_tilemap_size] = {}; // TEMP: There is a lot of redundancy here; a range-based slot key is likely to be used later on as a substitute.
 };

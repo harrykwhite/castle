@@ -1,20 +1,20 @@
 #include <castle/c_ui.h>
 
-s_ui make_ui(s_sprite_batch_collection &sb_collection)
+s_ui make_ui(c_renderer &renderer)
 {
     s_ui ui;
 
-    ui.cursor_sb_slot_key = take_any_sprite_batch_slot(static_cast<int>(ec_sprite_batch_layer::cursor), s_asset_id::make_core_tex_id(ec_core_tex::cursor), sb_collection);
+    ui.cursor_sb_slot_key = renderer.take_any_sprite_batch_slot(2, s_asset_id::make_core_tex_id(ec_core_tex::cursor));
 
     for (int i = 0; i < k_player_inv_hotbar_slot_cnt; ++i)
     {
-        ui.player_sb_slot_key[i] = take_any_sprite_batch_slot(static_cast<int>(ec_sprite_batch_layer::player_inv_hotbar), s_asset_id::make_core_tex_id(ec_core_tex::inv_slot), sb_collection);
+        ui.player_sb_slot_key[i] = renderer.take_any_sprite_batch_slot(1, s_asset_id::make_core_tex_id(ec_core_tex::inv_slot));
     }
 
     return ui;
 }
 
-void write_ui_render_data(const s_ui &ui, const s_sprite_batch_collection &sb_collection, const c_assets &assets, const s_input_state_pair &input_state_pair, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected)
+void write_ui_render_data(const s_ui &ui, const c_renderer &renderer, const c_assets &assets, const s_input_state_pair &input_state_pair, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected)
 {
     // Write inventory hotbar slots.
     {
@@ -28,18 +28,16 @@ void write_ui_render_data(const s_ui &ui, const s_sprite_batch_collection &sb_co
         for (int i = 0; i < k_player_inv_hotbar_slot_cnt; ++i)
         {
             const cc::s_vec_2d slot_pos = hotbar_pos + (cc::s_vec_2d {hotbar_slot_pos_x_offs + (i * hotbar_slot_gap), 0.0f});
-            const s_color slot_blend = i == player_inv_hotbar_slot_selected ? s_color::yellow() : s_color::white();
 
-            write_to_sprite_batch_slot(
+            renderer.write_to_sprite_batch_slot(
                 ui.player_sb_slot_key[i],
-                sb_collection,
                 assets,
                 slot_pos,
                 {0, 0, slot_tex_size.x, slot_tex_size.y},
                 {0.5f, 0.5f},
                 0.0f,
                 {cam.scale, cam.scale},
-                slot_blend
+                1.0f
             );
         }
     }
@@ -47,6 +45,6 @@ void write_ui_render_data(const s_ui &ui, const s_sprite_batch_collection &sb_co
     // Write cursor.
     {
         const cc::s_vec_2d_i cursor_tex_size = assets.get_tex_size(s_asset_id::make_core_tex_id(ec_core_tex::cursor));
-        write_to_sprite_batch_slot(ui.cursor_sb_slot_key, sb_collection, assets, input_state_pair.state.mouse_pos, {0, 0, cursor_tex_size.x, cursor_tex_size.y}, {0.5f, 0.5f}, 0.0f, {cam.scale, cam.scale});
+        renderer.write_to_sprite_batch_slot(ui.cursor_sb_slot_key, assets, input_state_pair.state.mouse_pos, {0, 0, cursor_tex_size.x, cursor_tex_size.y}, {0.5f, 0.5f}, 0.0f, {cam.scale, cam.scale});
     }
 }

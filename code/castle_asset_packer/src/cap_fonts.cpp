@@ -20,15 +20,14 @@ struct s_font_pack_info
 
 struct s_font_data_with_pixels
 {
-    cc::s_font_data fdata;
+    cc::s_font_data fd;
     std::unique_ptr<cc::u_byte[]> tex_px_data;
 };
 
 const s_font_pack_info k_font_pack_infos[] = {
-    {"/fonts/eb_garamond.ttf", 18},
-    {"/fonts/eb_garamond.ttf", 24},
     {"/fonts/eb_garamond.ttf", 36},
-    {"/fonts/eb_garamond.ttf", 48}
+    {"/fonts/eb_garamond.ttf", 48},
+    {"/fonts/eb_garamond.ttf", 72}
 };
 
 const int k_font_cnt = CC_STATIC_ARRAY_LEN(k_font_pack_infos);
@@ -82,21 +81,21 @@ static std::unique_ptr<s_font_data_with_pixels> get_font_data_with_px(const std:
 
     FT_Set_Char_Size(ft_face, pt_size << 6, 0, 96, 0);
 
-    font_data_with_px->fdata.line_height = get_line_height(ft_face);
+    font_data_with_px->fd.line_height = get_line_height(ft_face);
 
     // Initialise the font texture, setting all the pixels to transparent white.
-    font_data_with_px->fdata.tex_size = calc_font_tex_size(ft_face, ft_lib);
+    font_data_with_px->fd.tex_size = calc_font_tex_size(ft_face, ft_lib);
 
-    if (font_data_with_px->fdata.tex_size.y > cc::k_tex_size_limit.y)
+    if (font_data_with_px->fd.tex_size.y > cc::k_tex_size_limit.y)
     {
         std::cout << "ERROR: Font texture size is too large!" << std::endl;
         return nullptr;
     }
 
-    const int tex_px_data_size = font_data_with_px->fdata.tex_size.x * font_data_with_px->fdata.tex_size.y * cc::k_font_tex_channel_cnt;
+    const int tex_px_data_size = font_data_with_px->fd.tex_size.x * font_data_with_px->fd.tex_size.y * cc::k_font_tex_channel_cnt;
     font_data_with_px->tex_px_data = std::make_unique<cc::u_byte[]>(tex_px_data_size);
 
-    for (int i = 0; i < font_data_with_px->fdata.tex_size.x * font_data_with_px->fdata.tex_size.y; ++i)
+    for (int i = 0; i < font_data_with_px->fd.tex_size.x * font_data_with_px->fd.tex_size.y; ++i)
     {
         const int px_data_index = i * cc::k_font_tex_channel_cnt;
 
@@ -120,18 +119,18 @@ static std::unique_ptr<s_font_data_with_pixels> get_font_data_with_px(const std:
         if (char_draw_x + ft_face->glyph->bitmap.width > cc::k_tex_size_limit.x)
         {
             char_draw_x = 0;
-            char_draw_y += font_data_with_px->fdata.line_height;
+            char_draw_y += font_data_with_px->fd.line_height;
         }
 
-        font_data_with_px->fdata.chars.hor_offsets[i] = ft_face->glyph->metrics.horiBearingX >> 6;
-        font_data_with_px->fdata.chars.ver_offsets[i] = (ft_face->size->metrics.ascender - ft_face->glyph->metrics.horiBearingY) >> 6;
+        font_data_with_px->fd.chars.hor_offsets[i] = ft_face->glyph->metrics.horiBearingX >> 6;
+        font_data_with_px->fd.chars.ver_offsets[i] = (ft_face->size->metrics.ascender - ft_face->glyph->metrics.horiBearingY) >> 6;
 
-        font_data_with_px->fdata.chars.hor_advances[i] = ft_face->glyph->metrics.horiAdvance >> 6;
+        font_data_with_px->fd.chars.hor_advances[i] = ft_face->glyph->metrics.horiAdvance >> 6;
 
-        font_data_with_px->fdata.chars.src_rects[i].x = char_draw_x;
-        font_data_with_px->fdata.chars.src_rects[i].y = char_draw_y;
-        font_data_with_px->fdata.chars.src_rects[i].width = ft_face->glyph->bitmap.width;
-        font_data_with_px->fdata.chars.src_rects[i].height = ft_face->glyph->bitmap.rows;
+        font_data_with_px->fd.chars.src_rects[i].x = char_draw_x;
+        font_data_with_px->fd.chars.src_rects[i].y = char_draw_y;
+        font_data_with_px->fd.chars.src_rects[i].width = ft_face->glyph->bitmap.width;
+        font_data_with_px->fd.chars.src_rects[i].height = ft_face->glyph->bitmap.rows;
 
         // Set kernings (one per character combination).
         for (int j = 0; j < cc::k_font_char_range_size; j++)
@@ -139,26 +138,28 @@ static std::unique_ptr<s_font_data_with_pixels> get_font_data_with_px(const std:
             FT_Vector ft_kerning;
             FT_Get_Kerning(ft_face, FT_Get_Char_Index(ft_face, cc::k_font_char_range_begin + j), ft_char_index, FT_KERNING_DEFAULT, &ft_kerning);
 
-            font_data_with_px->fdata.chars.kernings[(cc::k_font_char_range_size * i) + j] = ft_kerning.x >> 6;
+            font_data_with_px->fd.chars.kernings[(cc::k_font_char_range_size * i) + j] = ft_kerning.x >> 6;
         }
 
         // Update the font texture's pixel data with the character.
-        for (int y = 0; y < font_data_with_px->fdata.chars.src_rects[i].height; y++)
+        for (int y = 0; y < font_data_with_px->fd.chars.src_rects[i].height; y++)
         {
-            for (int x = 0; x < font_data_with_px->fdata.chars.src_rects[i].width; x++)
+            for (int x = 0; x < font_data_with_px->fd.chars.src_rects[i].width; x++)
             {
                 const unsigned char px_alpha = ft_face->glyph->bitmap.buffer[(y * ft_face->glyph->bitmap.width) + x];
 
                 if (px_alpha > 0)
                 {
-                    const int px_data_x = (font_data_with_px->fdata.chars.src_rects[i].x + x) * cc::k_font_tex_channel_cnt;
-                    const int px_data_index = ((font_data_with_px->fdata.chars.src_rects[i].y + y) * font_data_with_px->fdata.tex_size.x * cc::k_font_tex_channel_cnt) + px_data_x;
+                    const int px_x = font_data_with_px->fd.chars.src_rects[i].x + x;
+                    const int px_y = font_data_with_px->fd.chars.src_rects[i].y + y;
+                    const int px_data_index = (px_y * font_data_with_px->fd.tex_size.x * cc::k_font_tex_channel_cnt) + (px_x * cc::k_font_tex_channel_cnt);
+
                     font_data_with_px->tex_px_data[px_data_index + 3] = px_alpha;
                 }
             }
         }
 
-        char_draw_x += font_data_with_px->fdata.chars.src_rects[i].width;
+        char_draw_x += font_data_with_px->fd.chars.src_rects[i].width;
     }
 
     FT_Done_Face(ft_face);
@@ -190,8 +191,8 @@ bool pack_fonts(std::ofstream &assets_file_ofs, const std::string &assets_dir)
         }
 
         // Write the font data to the file.
-        assets_file_ofs.write(reinterpret_cast<const char *>(&font_data_with_px->fdata), sizeof(font_data_with_px->fdata));
-        assets_file_ofs.write(reinterpret_cast<const char *>(font_data_with_px->tex_px_data.get()), font_data_with_px->fdata.tex_size.x * font_data_with_px->fdata.tex_size.y * cc::k_font_tex_channel_cnt);
+        assets_file_ofs.write(reinterpret_cast<const char *>(&font_data_with_px->fd), sizeof(font_data_with_px->fd));
+        assets_file_ofs.write(reinterpret_cast<const char *>(font_data_with_px->tex_px_data.get()), font_data_with_px->fd.tex_size.x * font_data_with_px->fd.tex_size.y * cc::k_font_tex_channel_cnt);
 
         std::cout << "Successfully packed font with file path \"" << font_file_path << "\" and point size " << pack_info.pt_size << "." << std::endl;
     }

@@ -1,100 +1,56 @@
 #pragma once
 
+#include <cassert>
+#include <memory>
 #include <glad/glad.h>
 #include <castle_common/cc_debugging.h>
 #include <castle_common/cc_misc.h>
 
 using u_gl_id = GLuint;
 
-template<int BIT_CNT>
-class c_bitset
+class c_heap_bitset
 {
 public:
-    void clear();
-    int get_first_inactive_bit_index() const; // Returns -1 if not found.
+    int get_first_inactive_bit_index() const; // Returns -1 if all bits are active.
     bool is_full() const;
-    bool is_empty() const;
+    bool is_clear() const;
 
-    inline bool is_bit_active(const int bit_index) const
+    c_heap_bitset(const int byte_cnt) : m_bytes(std::make_unique<cc::u_byte[]>(byte_cnt)), m_byte_cnt(byte_cnt)
     {
-        assert(bit_index >= 0 && bit_index < BIT_CNT);
-        return m_bytes[bit_index / 8] & (static_cast<unsigned char>(1) << (bit_index % 8));
+    }
+
+    inline void fill()
+    {
+        std::fill(m_bytes.get(), m_bytes.get() + m_byte_cnt, 0xFF);
+    }
+
+    inline void clear()
+    {
+        std::fill(m_bytes.get(), m_bytes.get() + m_byte_cnt, 0);
     }
 
     inline void activate_bit(const int bit_index)
     {
-        assert(bit_index >= 0 && bit_index < BIT_CNT);
+        assert(bit_index >= 0 && bit_index < m_byte_cnt * 8);
         m_bytes[bit_index / 8] |= static_cast<unsigned char>(1) << (bit_index % 8);
     }
 
     inline void deactivate_bit(const int bit_index)
     {
-        assert(bit_index >= 0 && bit_index < BIT_CNT);
+        assert(bit_index >= 0 && bit_index < m_byte_cnt * 8);
         m_bytes[bit_index / 8] &= ~(static_cast<unsigned char>(1) << (bit_index % 8));
     }
 
+    inline bool is_bit_active(const int bit_index) const
+    {
+        assert(bit_index >= 0 && bit_index < m_byte_cnt * 8);
+        return m_bytes[bit_index / 8] & (static_cast<unsigned char>(1) << (bit_index % 8));
+    }
+
 private:
-    unsigned char m_bytes[(BIT_CNT + 7) & ~7] = {};
+    std::unique_ptr<cc::u_byte[]> m_bytes;
+    int m_byte_cnt;
 };
-
-template<int BIT_CNT>
-inline void c_bitset<BIT_CNT>::clear()
-{
-    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
-    {
-        m_bytes[i] = 0x00;
-    }
-}
-
-template<int BIT_CNT>
-inline int c_bitset<BIT_CNT>::get_first_inactive_bit_index() const
-{
-    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
-    {
-        if (m_bytes[i] == 0xFF)
-        {
-            continue;
-        }
-
-        for (int j = 0; j < 8; ++j)
-        {
-            if (!(m_bytes[i] & (1 << j)))
-            {
-                return (i * 8) + j;
-            }
-        }
-    }
-
-    return -1;
-}
-
-template<int BIT_CNT>
-inline bool c_bitset<BIT_CNT>::is_full() const
-{
-    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
-    {
-        if (m_bytes[i] != 0xFF)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-template<int BIT_CNT>
-inline bool c_bitset<BIT_CNT>::is_empty() const
-{
-    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
-    {
-        if (m_bytes[i] != 0x00)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
 
 inline int incr_wrapped(const int val, const int incr, const int max_excl)
 {

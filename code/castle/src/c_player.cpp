@@ -1,12 +1,12 @@
 #include <castle/c_player.h>
 
-s_player_ent make_player_ent(const cc::s_vec_2d pos, s_sprite_batch_collection &batch_collection, const c_assets &assets)
+s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const c_assets &assets)
 {
     const cc::s_vec_2d_i tex_size = assets.get_tex_size(k_player_ent_tex_id);
     const cc::s_vec_2d tex_size_f = {static_cast<float>(tex_size.x), static_cast<float>(tex_size.y)};
 
     return {
-        take_any_sprite_batch_slot(static_cast<int>(ec_sprite_batch_layer::player), s_asset_id::make_core_tex_id(ec_core_tex::player), batch_collection),
+        renderer.take_any_sprite_batch_slot(0, s_asset_id::make_core_tex_id(ec_core_tex::player)),
         pos,
         {},
         0.0f,
@@ -30,10 +30,10 @@ s_player_ent player_ent_after_tick(const s_player_ent &ent, const s_input_state_
     return player_ent_after_rot;
 }
 
-void write_player_ent_render_data(const s_player_ent &player_ent, const s_sprite_batch_collection &sb_collection, const c_assets &assets)
+void write_player_ent_render_data(const s_player_ent &player_ent, const c_renderer &renderer, const c_assets &assets)
 {
     const cc::s_vec_2d_i tex_size = assets.get_tex_size(k_player_ent_tex_id);
-    write_to_sprite_batch_slot(player_ent.sb_slot_key, sb_collection, assets, player_ent.pos, {0, 0, tex_size.x, tex_size.y}, k_player_ent_origin, player_ent.rot);
+    renderer.write_to_sprite_batch_slot(player_ent.sb_slot_key, assets, player_ent.pos, {0, 0, tex_size.x, tex_size.y}, k_player_ent_origin, player_ent.rot);
 }
 
 static cc::s_vec_2d vel_after_hor_and_ver_tile_collision_proc(const cc::s_vec_2d vel, const cc::s_vec_2d pos, const u_collider_maker collider_maker, const c_tilemap &tilemap)
@@ -42,7 +42,7 @@ static cc::s_vec_2d vel_after_hor_and_ver_tile_collision_proc(const cc::s_vec_2d
 
     const cc::s_rect_f hor_collider = collider_maker(pos + cc::s_vec_2d {vel.x, 0.0f});
     const cc::s_rect_f ver_collider = collider_maker(pos + cc::s_vec_2d {0.0f, vel.y});
-    
+
     for (int ty = 0; ty < k_tilemap_size; ++ty)
     {
         for (int tx = 0; tx < k_tilemap_size; ++tx)

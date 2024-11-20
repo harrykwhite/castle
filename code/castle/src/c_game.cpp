@@ -6,15 +6,12 @@
 #include <castle/c_rendering.h>
 #include <castle/c_assets.h>
 #include <castle/c_input.h>
-#include <castle/c_world.h>
 #include <castle/c_ui.h>
 
 struct s_game_cleanup_info
 {
     bool glfw_initialized;
     GLFWwindow *glfw_window;
-
-    s_sprite_batch_collection *sprite_batch_collection;
 
     c_assets *assets;
 };
@@ -26,11 +23,6 @@ static void clean_game(const s_game_cleanup_info &info)
     if (info.assets)
     {
         info.assets->dispose_all();
-    }
-
-    if (info.sprite_batch_collection)
-    {
-        dispose_sprite_batch_collection(*info.sprite_batch_collection);
     }
 
     if (info.glfw_window)
@@ -119,10 +111,6 @@ void run_game()
         return;
     }
 
-    // Enable blending.
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     // Set up assets.
     c_assets assets;
 
@@ -134,14 +122,15 @@ void run_game()
 
     cleanup_info.assets = &assets;
 
-    // Set up sprite batch collection.
-    s_sprite_batch_collection sprite_batch_collection = make_sprite_batch_collection({1, 8, 1, 1}, 2);
+    // Set up rendering.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Create the game world.
-    s_world world = make_world(sprite_batch_collection, assets);
+    c_renderer renderer({{8}, {40}, {8}}, 1);
+    s_camera cam = {};
 
     // Set up UI.
-    s_ui ui = make_ui(sprite_batch_collection);
+    s_ui ui = make_ui(renderer);
 
     // TEMP
     int player_inv_hotbar_slot_selected = 0;
@@ -187,11 +176,11 @@ void run_game()
 
             do
             {
-                world_tick(world, input_state_pair, sprite_batch_collection, assets, glfw_window_size);
+                //world_tick(world, input_state_pair, renderer, assets, glfw_window_size);
 
-                player_inv_hotbar_slot_selected = incr_wrapped(player_inv_hotbar_slot_selected, -input_state_pair.state.mouse_scroll, k_player_inv_hotbar_slot_cnt);
+                //player_inv_hotbar_slot_selected = incr_wrapped(player_inv_hotbar_slot_selected, -input_state_pair.state.mouse_scroll, k_player_inv_hotbar_slot_cnt);
 
-                write_ui_render_data(ui, sprite_batch_collection, assets, input_state_pair, world.cam, glfw_window_size, player_inv_hotbar_slot_selected);
+                write_ui_render_data(ui, renderer, assets, input_state_pair, cam, glfw_window_size, player_inv_hotbar_slot_selected);
 
                 frame_dur_accum -= k_targ_tick_dur;
                 ++i;
@@ -201,11 +190,7 @@ void run_game()
 
         // Render.
         glfwSwapBuffers(glfw_window);
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        render_sprite_batches(sprite_batch_collection, world.cam, assets, glfw_window_size);
+        renderer.draw(assets, glfw_window_size, cam);
     }
 
     clean_game(cleanup_info);
