@@ -63,7 +63,7 @@ struct s_asset_id
     int group_index;
     int asset_index;
 
-    static constexpr s_asset_id make_core_tex_id(const ec_core_tex tex)
+    static constexpr s_asset_id create_core_tex_id(const ec_core_tex tex)
     {
         return {0, static_cast<int>(tex)};
     }

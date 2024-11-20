@@ -6,7 +6,7 @@ s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const
     const cc::s_vec_2d tex_size_f = {static_cast<float>(tex_size.x), static_cast<float>(tex_size.y)};
 
     return {
-        renderer.take_any_sprite_batch_slot(0, s_asset_id::make_core_tex_id(ec_core_tex::player)),
+        renderer.take_any_sprite_batch_slot(0, s_asset_id::create_core_tex_id(ec_core_tex::player)),
         pos,
         {},
         0.0f,
@@ -14,17 +14,17 @@ s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const
     };
 }
 
-s_player_ent player_ent_after_tick(const s_player_ent &ent, const s_input_state_pair &input_state_pair, const c_tilemap &tilemap, const c_assets &assets, const s_camera &cam, const cc::s_vec_2d_i window_size)
+s_player_ent player_ent_after_tick(const s_player_ent &ent, const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets, const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
     const cc::s_vec_2d move_axis = {
-        static_cast<float>(is_key_down(ec_key_code::d, input_state_pair)) - static_cast<float>(is_key_down(ec_key_code::a, input_state_pair)),
-        static_cast<float>(is_key_down(ec_key_code::s, input_state_pair)) - static_cast<float>(is_key_down(ec_key_code::w, input_state_pair))
+        static_cast<float>(input_manager.is_key_down(ec_key_code::d)) - static_cast<float>(input_manager.is_key_down(ec_key_code::a)),
+        static_cast<float>(input_manager.is_key_down(ec_key_code::s)) - static_cast<float>(input_manager.is_key_down(ec_key_code::w))
     };
     const cc::s_vec_2d move_vel = move_axis * k_player_ent_move_spd;
     const cc::s_vec_2d move_vel_after_tile_collisions = vel_after_tile_collision_proc(move_vel, ent.pos, ent.collider_maker, tilemap);
     const s_player_ent player_ent_after_move = ent.with_pos(ent.pos + move_vel_after_tile_collisions);
 
-    const cc::s_vec_2d rot_targ = screen_to_cam_pos(input_state_pair.state.mouse_pos, cam, window_size);
+    const cc::s_vec_2d rot_targ = get_screen_to_cam_pos(input_manager.get_mouse_pos(), cam, window_size);
     const s_player_ent player_ent_after_rot = player_ent_after_move.with_rot(cc::get_dir(player_ent_after_move.pos, rot_targ));
 
     return player_ent_after_rot;

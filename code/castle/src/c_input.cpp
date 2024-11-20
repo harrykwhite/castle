@@ -197,3 +197,9 @@ s_input_state make_input_state(GLFWwindow *const glfw_window, const int mouse_sc
         get_gamepad_axis_values(glfw_gamepad_state)
     };
 }
+
+void c_input_manager::refresh(GLFWwindow *const glfw_window, const int mouse_scroll)
+{
+    m_state_last = m_state;
+    m_state = make_input_state(glfw_window, mouse_scroll);
+}

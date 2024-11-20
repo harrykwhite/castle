@@ -184,7 +184,7 @@ private:
     }
 };
 
-inline cc::s_vec_2d cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_i window_size)
+inline cc::s_vec_2d get_cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
     return {
         ((pos.x - cam.pos.x) * cam.scale) + (window_size.x / 2.0f),
@@ -192,7 +192,7 @@ inline cc::s_vec_2d cam_to_screen_pos(const cc::s_vec_2d pos, const s_camera &ca
     };
 }
 
-inline cc::s_vec_2d screen_to_cam_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_i window_size)
+inline cc::s_vec_2d get_screen_to_cam_pos(const cc::s_vec_2d pos, const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
     return {
         ((pos.x - (window_size.x / 2.0f)) / cam.scale) + cam.pos.x,

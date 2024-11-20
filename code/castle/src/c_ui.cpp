@@ -4,21 +4,21 @@ s_ui make_ui(c_renderer &renderer)
 {
     s_ui ui;
 
-    ui.cursor_sb_slot_key = renderer.take_any_sprite_batch_slot(2, s_asset_id::make_core_tex_id(ec_core_tex::cursor));
+    ui.cursor_sb_slot_key = renderer.take_any_sprite_batch_slot(2, s_asset_id::create_core_tex_id(ec_core_tex::cursor));
 
     for (int i = 0; i < k_player_inv_hotbar_slot_cnt; ++i)
     {
-        ui.player_sb_slot_key[i] = renderer.take_any_sprite_batch_slot(1, s_asset_id::make_core_tex_id(ec_core_tex::inv_slot));
+        ui.player_sb_slot_key[i] = renderer.take_any_sprite_batch_slot(1, s_asset_id::create_core_tex_id(ec_core_tex::inv_slot));
     }
 
     return ui;
 }
 
-void write_ui_render_data(const s_ui &ui, const c_renderer &renderer, const c_assets &assets, const s_input_state_pair &input_state_pair, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected)
+void write_ui_render_data(const s_ui &ui, const c_renderer &renderer, const c_assets &assets, const c_input_manager &input_manager, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected)
 {
     // Write inventory hotbar slots.
     {
-        const cc::s_vec_2d_i slot_tex_size = assets.get_tex_size(s_asset_id::make_core_tex_id(ec_core_tex::inv_slot));
+        const cc::s_vec_2d_i slot_tex_size = assets.get_tex_size(s_asset_id::create_core_tex_id(ec_core_tex::inv_slot));
 
         const cc::s_vec_2d hotbar_pos = {(window_size.x / 2.0f), (window_size.y / 10.0f) * 9.0f};
         const float hotbar_slot_scale = 2.0f;
@@ -44,7 +44,7 @@ void write_ui_render_data(const s_ui &ui, const c_renderer &renderer, const c_as
 
     // Write cursor.
     {
-        const cc::s_vec_2d_i cursor_tex_size = assets.get_tex_size(s_asset_id::make_core_tex_id(ec_core_tex::cursor));
-        renderer.write_to_sprite_batch_slot(ui.cursor_sb_slot_key, assets, input_state_pair.state.mouse_pos, {0, 0, cursor_tex_size.x, cursor_tex_size.y}, {0.5f, 0.5f}, 0.0f, {cam.scale, cam.scale});
+        const cc::s_vec_2d_i cursor_tex_size = assets.get_tex_size(s_asset_id::create_core_tex_id(ec_core_tex::cursor));
+        renderer.write_to_sprite_batch_slot(ui.cursor_sb_slot_key, assets, input_manager.get_mouse_pos(), {0, 0, cursor_tex_size.x, cursor_tex_size.y}, {0.5f, 0.5f}, 0.0f, {cam.scale, cam.scale});
     }
 }

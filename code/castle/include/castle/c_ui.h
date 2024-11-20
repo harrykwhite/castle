@@ -12,4 +12,4 @@ struct s_ui
 };
 
 s_ui make_ui(c_renderer &renderer);
-void write_ui_render_data(const s_ui &ui, const c_renderer &renderer, const c_assets &assets, const s_input_state_pair &input_state_pair, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected);
+void write_ui_render_data(const s_ui &ui, const c_renderer &renderer, const c_assets &assets, const c_input_manager &input_manager, const s_camera &cam, const cc::s_vec_2d_i window_size, const int player_inv_hotbar_slot_selected);

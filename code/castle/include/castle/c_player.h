@@ -42,7 +42,7 @@ struct s_player_ent
 };
 
 s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const c_assets &assets);
-s_player_ent player_ent_after_tick(const s_player_ent &ent, const s_input_state_pair &input_state_pair, const c_tilemap &tilemap, const c_assets &assets, const s_camera &cam, const cc::s_vec_2d_i window_size);
+s_player_ent player_ent_after_tick(const s_player_ent &ent, const c_input_manager &input_manager, const c_tilemap &tilemap, const c_assets &assets, const s_camera &cam, const cc::s_vec_2d_i window_size);
 void write_player_ent_render_data(const s_player_ent &player_ent, const c_renderer &renderer, const c_assets &assets);
 
 cc::s_vec_2d vel_after_tile_collision_proc(const cc::s_vec_2d vel, const cc::s_vec_2d pos, const u_collider_maker collider_maker, const c_tilemap &tilemap);
@@ -57,5 +57,5 @@ inline u_collider_maker make_collider_maker(const cc::s_vec_2d offs, const cc::s
     };
 }
 
-constexpr s_asset_id k_player_ent_tex_id = s_asset_id::make_core_tex_id(ec_core_tex::player);
+constexpr s_asset_id k_player_ent_tex_id = s_asset_id::create_core_tex_id(ec_core_tex::player);
 constexpr cc::s_vec_2d k_player_ent_origin = {0.5f, 0.5f};

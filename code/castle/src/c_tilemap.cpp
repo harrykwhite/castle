@@ -6,7 +6,7 @@ c_tilemap::c_tilemap(c_renderer &renderer)
     {
         for (int x = 0; x < k_tilemap_size; ++x)
         {
-            m_sb_slot_keys[y][x] = renderer.take_any_sprite_batch_slot(0, s_asset_id::make_core_tex_id(ec_core_tex::dirt_tile));
+            m_sb_slot_keys[y][x] = renderer.take_any_sprite_batch_slot(0, s_asset_id::create_core_tex_id(ec_core_tex::dirt_tile));
         }
     }
 }

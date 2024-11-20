@@ -136,7 +136,7 @@ void run_game()
     int player_inv_hotbar_slot_selected = 0;
 
     // Set up input.
-    s_input_state_pair input_state_pair(make_blank_input_state(), make_blank_input_state());
+    c_input_manager input_manager;
 
     int glfw_callback_mouse_scroll = 0; // This is an axis representing the scroll wheel movement. It is updated by the GLFW scroll callback and gets reset after a new input state is generated.
     glfwSetWindowUserPointer(glfw_window, &glfw_callback_mouse_scroll);
@@ -168,7 +168,7 @@ void run_game()
 
         if (tick_cnt > 0)
         {
-            input_state_pair = {make_input_state(glfw_window, glfw_callback_mouse_scroll), input_state_pair.state_last};
+            input_manager.refresh(glfw_window, glfw_callback_mouse_scroll);
             glfw_callback_mouse_scroll = 0;
 
             // Execute ticks.
@@ -180,7 +180,7 @@ void run_game()
 
                 //player_inv_hotbar_slot_selected = incr_wrapped(player_inv_hotbar_slot_selected, -input_state_pair.state.mouse_scroll, k_player_inv_hotbar_slot_cnt);
 
-                write_ui_render_data(ui, renderer, assets, input_state_pair, cam, glfw_window_size, player_inv_hotbar_slot_selected);
+                write_ui_render_data(ui, renderer, assets, input_manager, cam, glfw_window_size, player_inv_hotbar_slot_selected);
 
                 frame_dur_accum -= k_targ_tick_dur;
                 ++i;

@@ -71,6 +71,11 @@ struct s_input_state
     u_gamepad_buttons_down_bits gamepad_buttons_down_bits;
     std::array<float, k_gamepad_axis_code_cnt> gamepad_axis_values;
 
+    static s_input_state create_blank()
+    {
+        return {0, {}, 0, 0, -1, 0, {}};
+    }
+
     s_input_state() = default;
 
     s_input_state(const u_keys_down_bits keys_down_bits, const cc::s_vec_2d mouse_pos, const u_mouse_buttons_down_bits mouse_buttons_down_bits, const int mouse_scroll, const int gamepad_glfw_joystick_index, const u_gamepad_buttons_down_bits gamepad_buttons_down_bits, const std::array<float, k_gamepad_axis_code_cnt> gamepad_axis_values)
@@ -79,75 +84,78 @@ struct s_input_state
     }
 };
 
-struct s_input_state_pair
+class c_input_manager
 {
-    s_input_state state;
-    s_input_state state_last;
+public:
+    void refresh(GLFWwindow *const glfw_window, const int mouse_scroll);
 
-    s_input_state_pair() = default;
-
-    s_input_state_pair(const s_input_state &state, const s_input_state &state_last) : state(state), state_last(state_last)
+    inline bool is_key_down(const ec_key_code key_code) const
     {
+        const auto key_bit = static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code);
+        return m_state.keys_down_bits & key_bit;
     }
+
+    inline bool is_key_pressed(const ec_key_code key_code) const
+    {
+        const auto key_bit = static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code);
+        return (m_state.keys_down_bits & key_bit) && !(m_state_last.keys_down_bits & key_bit);
+    }
+
+    inline bool is_key_released(const ec_key_code key_code) const
+    {
+        const auto key_bit = static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code);
+        return !(m_state.keys_down_bits & key_bit) && (m_state_last.keys_down_bits & key_bit);
+    }
+
+    inline bool is_mouse_button_down(const ec_mouse_button_code button_code) const
+    {
+        const auto button_bit = static_cast<u_mouse_buttons_down_bits>(1) << static_cast<int>(button_code);
+        return m_state.mouse_buttons_down_bits & button_bit;
+    }
+
+    inline bool is_mouse_button_pressed(const ec_mouse_button_code button_code) const
+    {
+        const auto button_bit = static_cast<u_mouse_buttons_down_bits>(1) << static_cast<int>(button_code);
+        return (m_state.mouse_buttons_down_bits & button_bit) && !(m_state_last.mouse_buttons_down_bits & button_bit);
+    }
+
+    inline bool is_mouse_button_released(const ec_mouse_button_code button_code) const
+    {
+        const auto button_bit = static_cast<u_mouse_buttons_down_bits>(1) << static_cast<int>(button_code);
+        return !(m_state.mouse_buttons_down_bits & button_bit) && (m_state_last.mouse_buttons_down_bits & button_bit);
+    }
+
+    inline bool is_gamepad_button_down(const ec_gamepad_button_code button_code) const
+    {
+        const auto button_bit = static_cast<u_gamepad_buttons_down_bits>(1) << static_cast<int>(button_code);
+        return m_state.gamepad_buttons_down_bits & button_bit;
+    }
+
+    inline bool is_gamepad_button_pressed(const ec_gamepad_button_code button_code) const
+    {
+        const auto button_bit = static_cast<u_gamepad_buttons_down_bits>(1) << static_cast<int>(button_code);
+        return (m_state.gamepad_buttons_down_bits & button_bit) && !(m_state_last.gamepad_buttons_down_bits & button_bit);
+    }
+
+    inline bool is_gamepad_button_released(const ec_gamepad_button_code button_code) const
+    {
+        const auto button_bit = static_cast<u_gamepad_buttons_down_bits>(1) << static_cast<int>(button_code);
+        return !(m_state.gamepad_buttons_down_bits & button_bit) && (m_state_last.gamepad_buttons_down_bits & button_bit);
+    }
+
+    inline cc::s_vec_2d get_mouse_pos() const
+    {
+        return m_state.mouse_pos;
+    }
+
+    inline int get_mouse_scroll() const
+    {
+        return m_state.mouse_scroll;
+    }
+
+private:
+    s_input_state m_state = s_input_state::create_blank();
+    s_input_state m_state_last = s_input_state::create_blank();
 };
 
 s_input_state make_input_state(GLFWwindow *const glfw_window, const int mouse_scroll);
-
-inline s_input_state make_blank_input_state()
-{
-    return s_input_state(0, {}, 0, 0, -1, 0, {});
-}
-
-inline bool is_key_down(const ec_key_code key_code, const s_input_state_pair &input_state_pair)
-{
-    const auto key_bit = static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code);
-    return input_state_pair.state.keys_down_bits & key_bit;
-}
-
-inline bool is_key_pressed(const ec_key_code key_code, const s_input_state_pair &input_state_pair)
-{
-    const auto key_bit = static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code);
-    return (input_state_pair.state.keys_down_bits & key_bit) && !(input_state_pair.state_last.keys_down_bits & key_bit);
-}
-
-inline bool is_key_released(const ec_key_code key_code, const s_input_state_pair &input_state_pair)
-{
-    const auto key_bit = static_cast<u_keys_down_bits>(1) << static_cast<int>(key_code);
-    return !(input_state_pair.state.keys_down_bits & key_bit) && (input_state_pair.state_last.keys_down_bits & key_bit);
-}
-
-inline bool is_mouse_button_down(const ec_mouse_button_code button_code, const s_input_state_pair &input_state_pair)
-{
-    const auto button_bit = static_cast<u_mouse_buttons_down_bits>(1) << static_cast<int>(button_code);
-    return input_state_pair.state.mouse_buttons_down_bits & button_bit;
-}
-
-inline bool is_mouse_button_pressed(const ec_mouse_button_code button_code, const s_input_state_pair &input_state_pair)
-{
-    const auto button_bit = static_cast<u_mouse_buttons_down_bits>(1) << static_cast<int>(button_code);
-    return (input_state_pair.state.mouse_buttons_down_bits & button_bit) && !(input_state_pair.state_last.mouse_buttons_down_bits & button_bit);
-}
-
-inline bool is_mouse_button_released(const ec_mouse_button_code button_code, const s_input_state_pair &input_state_pair)
-{
-    const auto button_bit = static_cast<u_mouse_buttons_down_bits>(1) << static_cast<int>(button_code);
-    return !(input_state_pair.state.mouse_buttons_down_bits & button_bit) && (input_state_pair.state_last.mouse_buttons_down_bits & button_bit);
-}
-
-inline bool is_gamepad_button_down(const ec_gamepad_button_code button_code, const s_input_state_pair &input_state_pair)
-{
-    const auto button_bit = static_cast<u_gamepad_buttons_down_bits>(1) << static_cast<int>(button_code);
-    return input_state_pair.state.gamepad_buttons_down_bits & button_bit;
-}
-
-inline bool is_gamepad_button_pressed(const ec_gamepad_button_code button_code, const s_input_state_pair &input_state_pair)
-{
-    const auto button_bit = static_cast<u_gamepad_buttons_down_bits>(1) << static_cast<int>(button_code);
-    return (input_state_pair.state.gamepad_buttons_down_bits & button_bit) && !(input_state_pair.state_last.gamepad_buttons_down_bits & button_bit);
-}
-
-inline bool is_gamepad_button_released(const ec_gamepad_button_code button_code, const s_input_state_pair &input_state_pair)
-{
-    const auto button_bit = static_cast<u_gamepad_buttons_down_bits>(1) << static_cast<int>(button_code);
-    return !(input_state_pair.state.gamepad_buttons_down_bits & button_bit) && (input_state_pair.state_last.gamepad_buttons_down_bits & button_bit);
-}
