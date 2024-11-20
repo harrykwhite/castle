@@ -1,6 +1,6 @@
 #include <castle/c_rendering.h>
 
-static inline cc::s_matrix_4x4 gen_camera_view_matrix(const s_camera &cam, const cc::s_vec_2d_i window_size)
+static inline cc::s_matrix_4x4 make_camera_view_matrix(const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
     auto mat = cc::s_matrix_4x4::identity();
     mat[0][0] = cam.scale;
@@ -84,6 +84,44 @@ c_sprite_batch::~c_sprite_batch()
     glDeleteVertexArrays(1, &m_vert_array_gl_id);
 }
 
+c_sprite_batch::c_sprite_batch(c_sprite_batch &&other)
+    : m_vert_array_gl_id(other.m_vert_array_gl_id),
+    m_vert_buf_gl_id(other.m_vert_buf_gl_id),
+    m_elem_buf_gl_id(other.m_elem_buf_gl_id),
+    m_slot_cnt(other.m_slot_cnt),
+    m_slot_activity(std::move(other.m_slot_activity)),
+    m_slot_tex_units(std::move(other.m_slot_tex_units))
+{
+    std::copy(std::begin(other.m_tex_unit_tex_ids), std::end(other.m_tex_unit_tex_ids), m_tex_unit_tex_ids);
+    std::copy(std::begin(other.m_tex_unit_ref_cnts), std::end(other.m_tex_unit_ref_cnts), m_tex_unit_ref_cnts);
+
+    other.m_vert_array_gl_id = 0;
+    other.m_vert_buf_gl_id = 0;
+    other.m_elem_buf_gl_id = 0;
+}
+
+c_sprite_batch &c_sprite_batch::operator=(c_sprite_batch &&other)
+{
+    if (this != &other)
+    {
+        m_vert_array_gl_id = other.m_vert_array_gl_id;
+        m_vert_buf_gl_id = other.m_vert_buf_gl_id;
+        m_elem_buf_gl_id = other.m_elem_buf_gl_id;
+        m_slot_cnt = other.m_slot_cnt;
+        m_slot_activity = std::move(other.m_slot_activity);
+        m_slot_tex_units = std::move(other.m_slot_tex_units);
+
+        std::copy(std::begin(other.m_tex_unit_tex_ids), std::end(other.m_tex_unit_tex_ids), m_tex_unit_tex_ids);
+        std::copy(std::begin(other.m_tex_unit_ref_cnts), std::end(other.m_tex_unit_ref_cnts), m_tex_unit_ref_cnts);
+
+        other.m_vert_array_gl_id = 0;
+        other.m_vert_buf_gl_id = 0;
+        other.m_elem_buf_gl_id = 0;
+    }
+
+    return *this;
+}
+
 void c_sprite_batch::draw(const c_assets &assets, const cc::s_vec_2d_i window_size, const s_camera *const cam) const
 {
     const u_gl_id sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::make_core_shader_prog_id(ec_core_shader_prog::sprite_quad));
@@ -95,7 +133,7 @@ void c_sprite_batch::draw(const c_assets &assets, const cc::s_vec_2d_i window_si
     glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_proj"), 1, false, reinterpret_cast<const float *>(proj_mat.elems));
 
     // Set up the view matrix.
-    const auto view_mat = cam ? gen_camera_view_matrix(*cam, window_size) : cc::s_matrix_4x4::identity();
+    const auto view_mat = cam ? make_camera_view_matrix(*cam, window_size) : cc::s_matrix_4x4::identity();
     glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_view"), 1, false, reinterpret_cast<const float *>(view_mat.elems));
 
     // Set up texture units.
@@ -311,9 +349,49 @@ c_char_batch::~c_char_batch()
     glDeleteVertexArrays(1, &m_vert_array_gl_id);
 }
 
+c_char_batch::c_char_batch(c_char_batch &&other)
+    : m_pos(other.m_pos),
+    m_rot(other.m_rot),
+    m_blend(other.m_blend),
+    m_vert_array_gl_id(other.m_vert_array_gl_id),
+    m_vert_buf_gl_id(other.m_vert_buf_gl_id),
+    m_elem_buf_gl_id(other.m_elem_buf_gl_id),
+    m_active_slot_cnt(other.m_active_slot_cnt),
+    m_slot_cnt(other.m_slot_cnt),
+    m_font_id(other.m_font_id)
+{
+    other.m_vert_array_gl_id = 0;
+    other.m_vert_buf_gl_id = 0;
+    other.m_elem_buf_gl_id = 0;
+}
+
+c_char_batch &c_char_batch::operator=(c_char_batch &&other)
+{
+    if (this != &other)
+    {
+        m_pos = other.m_pos;
+        m_rot = other.m_rot;
+        m_blend = other.m_blend;
+        m_vert_array_gl_id = other.m_vert_array_gl_id;
+        m_vert_buf_gl_id = other.m_vert_buf_gl_id;
+        m_elem_buf_gl_id = other.m_elem_buf_gl_id;
+        m_active_slot_cnt = other.m_active_slot_cnt;
+        m_slot_cnt = other.m_slot_cnt;
+        m_font_id = other.m_font_id;
+
+        other.m_vert_array_gl_id = 0;
+        other.m_vert_buf_gl_id = 0;
+        other.m_elem_buf_gl_id = 0;
+    }
+
+    return *this;
+}
+
 void c_char_batch::write(const std::string &text, const c_assets &assets, const ec_font_align_hor align_hor, const ec_font_align_ver align_ver)
 {
-    assert(text.length() > 0); // TODO: Additionally check that the batch has enough slots for the text.
+    assert(text.length() > 0 && m_slot_cnt <= text.length());
+
+    m_active_slot_cnt = text.length();
 
     const cc::s_font_data &font_data = assets.get_font_data(m_font_id);
 
@@ -477,7 +555,7 @@ void c_char_batch::draw(const c_assets &assets, const cc::s_vec_2d_i window_size
     glBindTexture(GL_TEXTURE_2D, assets.get_font_tex_gl_id(m_font_id));
 
     glBindVertexArray(m_vert_array_gl_id);
-    glDrawElements(GL_TRIANGLES, 6 * m_slot_cnt, GL_UNSIGNED_SHORT, nullptr);
+    glDrawElements(GL_TRIANGLES, 6 * m_active_slot_cnt, GL_UNSIGNED_SHORT, nullptr);
 }
 
 c_renderer::c_renderer(const std::vector<s_render_layer_init_info> &&layer_init_infos, const int sprite_batch_cam_layer_cnt) : m_layer_init_infos(layer_init_infos), m_sprite_batch_cam_layer_cnt(sprite_batch_cam_layer_cnt), m_layer_infos(std::make_unique<s_render_layer_info[]>(layer_init_infos.size()))

@@ -1,12 +1,12 @@
 #pragma once
 
-#if 0
 #include <vector>
 #include "c_tilemap.h"
 #include "c_rendering.h"
 #include "c_input.h"
 #include "c_player.h"
 
+#if 0
 constexpr cc::s_vec_2d k_world_scene_middle = cc::s_vec_2d {k_tile_size, k_tile_size} * static_cast<float>(k_tilemap_size) * 0.5f;
 
 enum class ec_scene_type
@@ -36,7 +36,7 @@ struct s_scene_type_info
 class c_scene
 {
 public:
-    c_scene(const s_sprite_batch_collection &sprite_batch_collection) : m_sprite_batch_collection(sprite_batch_collection)
+    c_scene(c_renderer &&renderer) : m_renderer(renderer)
     {
     }
 
@@ -45,7 +45,7 @@ public:
 
 protected:
     s_camera m_cam = {};
-    s_sprite_batch_collection m_sprite_batch_collection;
+    c_renderer m_renderer;
 };
 
 class c_title_scene : public c_scene

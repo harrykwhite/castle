@@ -10,7 +10,7 @@ s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const
         pos,
         {},
         0.0f,
-        gen_collider_maker(-cc::s_vec_2d {tex_size_f.x * k_player_ent_origin.x, tex_size_f.y * k_player_ent_origin.y}, tex_size_f)
+        make_collider_maker(-cc::s_vec_2d {tex_size_f.x * k_player_ent_origin.x, tex_size_f.y * k_player_ent_origin.y}, tex_size_f)
     };
 }
 

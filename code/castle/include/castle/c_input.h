@@ -91,9 +91,9 @@ struct s_input_state_pair
     }
 };
 
-s_input_state gen_input_state(GLFWwindow *const glfw_window, const int mouse_scroll);
+s_input_state make_input_state(GLFWwindow *const glfw_window, const int mouse_scroll);
 
-inline s_input_state gen_blank_input_state()
+inline s_input_state make_blank_input_state()
 {
     return s_input_state(0, {}, 0, 0, -1, 0, {});
 }

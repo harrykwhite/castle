@@ -47,7 +47,7 @@ void write_player_ent_render_data(const s_player_ent &player_ent, const c_render
 
 cc::s_vec_2d vel_after_tile_collision_proc(const cc::s_vec_2d vel, const cc::s_vec_2d pos, const u_collider_maker collider_maker, const c_tilemap &tilemap);
 
-inline u_collider_maker gen_collider_maker(const cc::s_vec_2d offs, const cc::s_vec_2d size)
+inline u_collider_maker make_collider_maker(const cc::s_vec_2d offs, const cc::s_vec_2d size)
 {
     assert(size.x > 0.0f && size.y > 0.0f);
 
