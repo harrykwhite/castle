@@ -158,4 +158,4 @@ private:
     s_input_state m_state_last = s_input_state::create_blank();
 };
 
-s_input_state make_input_state(GLFWwindow *const glfw_window, const int mouse_scroll);
+s_input_state create_input_state(GLFWwindow *const glfw_window, const int mouse_scroll);

@@ -151,7 +151,7 @@ struct s_vec_2d_i
 
 struct s_matrix_4x4
 {
-    static inline s_matrix_4x4 identity()
+    static inline s_matrix_4x4 create_identity()
     {
         s_matrix_4x4 mat = {};
         mat[0][0] = 1.0f;
@@ -161,7 +161,7 @@ struct s_matrix_4x4
         return mat;
     }
 
-    static inline s_matrix_4x4 ortho(const float left, const float right, const float bottom, const float top, const float near, const float far)
+    static inline s_matrix_4x4 create_ortho(const float left, const float right, const float bottom, const float top, const float near, const float far)
     {
         s_matrix_4x4 mat = {};
         mat[0][0] = 2.0f / (right - left);
@@ -197,7 +197,7 @@ struct s_rect
         return y + height;
     }
 
-    inline bool intersects(const s_rect &other) const
+    inline bool get_intersects(const s_rect &other) const
     {
         return get_right() > other.x && other.get_right() > x && get_bottom() > other.y && other.get_bottom() > y;
     }
@@ -228,7 +228,7 @@ struct s_rect_f
         return y + height;
     }
 
-    inline bool intersects(const s_rect_f &other) const
+    inline bool get_intersects(const s_rect_f &other) const
     {
         return get_right() > other.x && other.get_right() > x && get_bottom() > other.y && other.get_bottom() > y;
     }

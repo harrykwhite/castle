@@ -1,8 +1,8 @@
 #include <castle/c_rendering.h>
 
-static inline cc::s_matrix_4x4 make_camera_view_matrix(const s_camera &cam, const cc::s_vec_2d_i window_size)
+static inline cc::s_matrix_4x4 create_camera_view_matrix(const s_camera &cam, const cc::s_vec_2d_i window_size)
 {
-    auto mat = cc::s_matrix_4x4::identity();
+    auto mat = cc::s_matrix_4x4::create_identity();
     mat[0][0] = cam.scale;
     mat[1][1] = cam.scale;
     mat[3][0] = (-cam.pos.x * cam.scale) + (window_size.x / 2.0f);
@@ -84,7 +84,7 @@ c_sprite_batch::~c_sprite_batch()
     glDeleteVertexArrays(1, &m_vert_array_gl_id);
 }
 
-c_sprite_batch::c_sprite_batch(c_sprite_batch &&other)
+c_sprite_batch::c_sprite_batch(c_sprite_batch &&other) noexcept
     : m_vert_array_gl_id(other.m_vert_array_gl_id),
     m_vert_buf_gl_id(other.m_vert_buf_gl_id),
     m_elem_buf_gl_id(other.m_elem_buf_gl_id),
@@ -100,7 +100,7 @@ c_sprite_batch::c_sprite_batch(c_sprite_batch &&other)
     other.m_elem_buf_gl_id = 0;
 }
 
-c_sprite_batch &c_sprite_batch::operator=(c_sprite_batch &&other)
+c_sprite_batch &c_sprite_batch::operator=(c_sprite_batch &&other) noexcept
 {
     if (this != &other)
     {
@@ -124,16 +124,16 @@ c_sprite_batch &c_sprite_batch::operator=(c_sprite_batch &&other)
 
 void c_sprite_batch::draw(const c_assets &assets, const cc::s_vec_2d_i window_size, const s_camera *const cam) const
 {
-    const u_gl_id sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::make_core_shader_prog_id(ec_core_shader_prog::sprite_quad));
+    const u_gl_id sprite_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::create_core_shader_prog_id(ec_core_shader_prog::sprite_quad));
 
     glUseProgram(sprite_quad_prog_gl_id);
 
     // Set up the projection matrix.
-    const auto proj_mat = cc::s_matrix_4x4::ortho(0.0f, window_size.x, window_size.y, 0.0f, -1.0f, 1.0f);
+    const auto proj_mat = cc::s_matrix_4x4::create_ortho(0.0f, window_size.x, window_size.y, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_proj"), 1, false, reinterpret_cast<const float *>(proj_mat.elems));
 
     // Set up the view matrix.
-    const auto view_mat = cam ? make_camera_view_matrix(*cam, window_size) : cc::s_matrix_4x4::identity();
+    const auto view_mat = cam ? create_camera_view_matrix(*cam, window_size) : cc::s_matrix_4x4::create_identity();
     glUniformMatrix4fv(glGetUniformLocation(sprite_quad_prog_gl_id, "u_view"), 1, false, reinterpret_cast<const float *>(view_mat.elems));
 
     // Set up texture units.
@@ -349,7 +349,7 @@ c_char_batch::~c_char_batch()
     glDeleteVertexArrays(1, &m_vert_array_gl_id);
 }
 
-c_char_batch::c_char_batch(c_char_batch &&other)
+c_char_batch::c_char_batch(c_char_batch &&other) noexcept
     : m_pos(other.m_pos),
     m_rot(other.m_rot),
     m_blend(other.m_blend),
@@ -365,7 +365,7 @@ c_char_batch::c_char_batch(c_char_batch &&other)
     other.m_elem_buf_gl_id = 0;
 }
 
-c_char_batch &c_char_batch::operator=(c_char_batch &&other)
+c_char_batch &c_char_batch::operator=(c_char_batch &&other) noexcept
 {
     if (this != &other)
     {
@@ -541,10 +541,10 @@ void c_char_batch::write(const std::string &text, const c_assets &assets, const 
 
 void c_char_batch::draw(const c_assets &assets, const cc::s_vec_2d_i window_size) const
 {
-    const u_gl_id char_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::make_core_shader_prog_id(ec_core_shader_prog::char_quad));
+    const u_gl_id char_quad_prog_gl_id = assets.get_shader_prog_gl_id(s_asset_id::create_core_shader_prog_id(ec_core_shader_prog::char_quad));
     glUseProgram(char_quad_prog_gl_id);
 
-    const auto proj_mat = cc::s_matrix_4x4::ortho(0.0f, window_size.x, window_size.y, 0.0f, -1.0f, 1.0f);
+    const auto proj_mat = cc::s_matrix_4x4::create_ortho(0.0f, window_size.x, window_size.y, 0.0f, -1.0f, 1.0f);
     glUniformMatrix4fv(glGetUniformLocation(char_quad_prog_gl_id, "u_proj"), 1, false, reinterpret_cast<const float *>(proj_mat.elems));
 
     glUniform2fv(glGetUniformLocation(char_quad_prog_gl_id, "u_pos"), 1, reinterpret_cast<const float *>(&m_pos));
@@ -576,7 +576,7 @@ c_renderer::c_renderer(const std::vector<s_render_layer_init_info> &&layer_init_
     for (const s_render_layer_init_info &layer_init_info : m_layer_init_infos)
     {
         m_sprite_batches.emplace_back(layer_init_info.sprite_batch_default_slot_cnt);
-        m_char_batches.emplace_back(32, s_asset_id::make_core_font_id(ec_core_font::eb_garamond_48));
+        m_char_batches.emplace_back(32, s_asset_id::create_core_font_id(ec_core_font::eb_garamond_48));
     }
 }
 

@@ -24,14 +24,14 @@ enum class ec_font_align_ver
 
 struct s_color
 {
-    static constexpr s_color white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr s_color black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr s_color red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr s_color green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr s_color blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
-    static constexpr s_color yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr s_color cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr s_color magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
+    static constexpr s_color create_white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
+    static constexpr s_color create_black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
+    static constexpr s_color create_red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
+    static constexpr s_color create_green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
+    static constexpr s_color create_blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
+    static constexpr s_color create_yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
+    static constexpr s_color create_cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
+    static constexpr s_color create_magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
 
     float r, g, b, a;
 };
@@ -69,8 +69,8 @@ public:
     ~c_sprite_batch();
     c_sprite_batch(const c_sprite_batch &) = delete;
     c_sprite_batch &operator=(const c_sprite_batch &) = delete;
-    c_sprite_batch(c_sprite_batch &&);
-    c_sprite_batch &operator=(c_sprite_batch &&);
+    c_sprite_batch(c_sprite_batch &&) noexcept;
+    c_sprite_batch &operator=(c_sprite_batch &&) noexcept;
 
     // Provide nullptr as the cam argument if not wanting to draw with a camera view matrix.
     void draw(const c_assets &assets, const cc::s_vec_2d_i window_size, const s_camera *const cam) const;
@@ -100,14 +100,14 @@ class c_char_batch
 public:
     cc::s_vec_2d m_pos = {};
     float m_rot = 0.0f;
-    s_color m_blend = s_color::white();
+    s_color m_blend = s_color::create_white();
 
     c_char_batch(const int slot_cnt, const s_asset_id font_id);
     ~c_char_batch();
     c_char_batch(const c_char_batch &) = delete;
     c_char_batch &operator=(const c_char_batch &) = delete;
-    c_char_batch(c_char_batch &&);
-    c_char_batch &operator=(c_char_batch &&other);
+    c_char_batch(c_char_batch &&) noexcept;
+    c_char_batch &operator=(c_char_batch &&other) noexcept;
 
     void write(const std::string &text, const c_assets &assets, const ec_font_align_hor align_hor, const ec_font_align_ver align_ver);
     void draw(const c_assets &assets, const cc::s_vec_2d_i window_size) const;

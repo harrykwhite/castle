@@ -8,7 +8,7 @@ bool c_assets::load_core_group()
 {
     assert(!m_group_activity.test(0));
     bool err = false;
-    m_groups[0] = make_core_asset_group(err);
+    m_groups[0] = create_core_asset_group(err);
     m_group_activity.set(0);
     return !err;
 }
@@ -73,12 +73,12 @@ bool c_assets::load_mod_group(const int mod_index, std::ifstream &ifs, const int
     assert(mod_index >= 0 && mod_index < k_mod_limit);
     assert(!m_group_activity.test(1 + mod_index));
     bool err = false;
-    m_groups[1 + mod_index] = make_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
+    m_groups[1 + mod_index] = create_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
     m_group_activity.set(1 + mod_index);
     return err;
 }
 
-s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt)
+s_asset_group create_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt)
 {
     const int buf_tex_gl_ids_offs = 0;
     const int buf_tex_sizes_offs = sizeof(u_gl_id) * tex_cnt;
@@ -238,7 +238,7 @@ s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int 
     };
 }
 
-s_asset_group make_core_asset_group(bool &err)
+s_asset_group create_core_asset_group(bool &err)
 {
     // Open the asset file.
     std::ifstream ifs(k_core_assets_file_name, std::ios::binary);
@@ -256,5 +256,5 @@ s_asset_group make_core_asset_group(bool &err)
     const auto font_cnt = cc::read_from_ifs<int>(ifs);
 
     // Make the asset group from the rest of the file.
-    return make_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
+    return create_asset_group(ifs, tex_cnt, shader_prog_cnt, font_cnt);
 }

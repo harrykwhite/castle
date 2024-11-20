@@ -68,12 +68,12 @@ struct s_asset_id
         return {0, static_cast<int>(tex)};
     }
 
-    static constexpr s_asset_id make_core_shader_prog_id(const ec_core_shader_prog prog)
+    static constexpr s_asset_id create_core_shader_prog_id(const ec_core_shader_prog prog)
     {
         return {0, static_cast<int>(prog)};
     }
 
-    static constexpr s_asset_id make_core_font_id(const ec_core_font font)
+    static constexpr s_asset_id create_core_font_id(const ec_core_font font)
     {
         return {0, static_cast<int>(font)};
     }
@@ -135,5 +135,5 @@ private:
     bool load_mod_group(const int mod_index, std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt);
 };
 
-s_asset_group make_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt);
-s_asset_group make_core_asset_group(bool &err);
+s_asset_group create_asset_group(std::ifstream &ifs, const int tex_cnt, const int shader_prog_cnt, const int font_cnt);
+s_asset_group create_core_asset_group(bool &err);

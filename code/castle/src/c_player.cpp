@@ -1,6 +1,6 @@
 #include <castle/c_player.h>
 
-s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const c_assets &assets)
+s_player_ent create_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const c_assets &assets)
 {
     const cc::s_vec_2d_i tex_size = assets.get_tex_size(k_player_ent_tex_id);
     const cc::s_vec_2d tex_size_f = {static_cast<float>(tex_size.x), static_cast<float>(tex_size.y)};
@@ -10,7 +10,7 @@ s_player_ent make_player_ent(const cc::s_vec_2d pos, c_renderer &renderer, const
         pos,
         {},
         0.0f,
-        make_collider_maker(-cc::s_vec_2d {tex_size_f.x * k_player_ent_origin.x, tex_size_f.y * k_player_ent_origin.y}, tex_size_f)
+        create_collider_maker(-cc::s_vec_2d {tex_size_f.x * k_player_ent_origin.x, tex_size_f.y * k_player_ent_origin.y}, tex_size_f)
     };
 }
 
@@ -54,7 +54,7 @@ static cc::s_vec_2d vel_after_hor_and_ver_tile_collision_proc(const cc::s_vec_2d
 
             const cc::s_rect_f tile_collider = tilemap.get_tile_collider(tx, ty);
 
-            if (!(collision_flags & 1) && hor_collider.intersects(tile_collider))
+            if (!(collision_flags & 1) && hor_collider.get_intersects(tile_collider))
             {
                 collision_flags |= 1;
 
@@ -64,7 +64,7 @@ static cc::s_vec_2d vel_after_hor_and_ver_tile_collision_proc(const cc::s_vec_2d
                 }
             }
 
-            if (!(collision_flags & 2) && ver_collider.intersects(tile_collider))
+            if (!(collision_flags & 2) && ver_collider.get_intersects(tile_collider))
             {
                 collision_flags |= 2;
 
@@ -110,7 +110,7 @@ static cc::s_vec_2d vel_after_diag_tile_collision_proc(const cc::s_vec_2d vel, c
 
             const cc::s_rect_f tile_collider = tilemap.get_tile_collider(tx, ty);
 
-            if (diag_collider.intersects(tile_collider))
+            if (diag_collider.get_intersects(tile_collider))
             {
                 return {0.0f, vel.y};
             }

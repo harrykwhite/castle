@@ -130,7 +130,7 @@ void run_game()
     s_camera cam = {};
 
     // Set up UI.
-    s_ui ui = make_ui(renderer);
+    s_ui ui = create_ui(renderer);
 
     // TEMP
     int player_inv_hotbar_slot_selected = 0;

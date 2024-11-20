@@ -69,5 +69,5 @@ private:
 };
 
 const s_scene_type_info &get_scene_type_info(const ec_scene_type type);
-c_scene *make_scene(const ec_scene_type type, const c_assets &assets);
+c_scene *create_scene(const ec_scene_type type, const c_assets &assets);
 #endif

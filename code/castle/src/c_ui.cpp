@@ -1,6 +1,6 @@
 #include <castle/c_ui.h>
 
-s_ui make_ui(c_renderer &renderer)
+s_ui create_ui(c_renderer &renderer)
 {
     s_ui ui;
 

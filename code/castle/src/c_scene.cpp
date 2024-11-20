@@ -9,7 +9,7 @@ const s_scene_type_info &get_scene_type_info(const ec_scene_type type)
     {
         std::array<s_scene_type_info, k_scene_type_cnt> scene_type_infos;
 
-        auto make_scene_type_info = [](const ec_scene_type type)
+        auto create_scene_type_info = [](const ec_scene_type type)
         {
             switch (type)
             {
@@ -33,7 +33,7 @@ const s_scene_type_info &get_scene_type_info(const ec_scene_type type)
 
         for (int i = 0; i < k_scene_type_cnt; ++i)
         {
-            scene_type_infos[i] = make_scene_type_info(static_cast<ec_scene_type>(i));
+            scene_type_infos[i] = create_scene_type_info(static_cast<ec_scene_type>(i));
         }
 
         return scene_type_infos;
@@ -42,11 +42,11 @@ const s_scene_type_info &get_scene_type_info(const ec_scene_type type)
     return scene_type_infos[static_cast<int>(type)];
 }
 
-c_scene *make_scene(const ec_scene_type type, const c_assets &assets)
+c_scene *create_scene(const ec_scene_type type, const c_assets &assets)
 {
     const s_scene_type_info &scene_type_info = get_scene_type_info(type);
 
-    s_sprite_batch_collection sprite_batch_collection = make_sprite_batch_collection(scene_type_info.layer_batch_cnts, scene_type_info.screen_layers_begin_batch_index);
+    s_sprite_batch_collection sprite_batch_collection = create_sprite_batch_collection(scene_type_info.layer_batch_cnts, scene_type_info.screen_layers_begin_batch_index);
 
     switch (type)
     {
@@ -75,7 +75,7 @@ void c_title_scene::tick(const s_input_state_pair &input_state_pair, const c_ass
 }
 
 c_world_scene::c_world_scene(s_sprite_batch_collection &sprite_batch_collection, const c_assets &assets)
-    : c_scene(sprite_batch_collection), m_player_ent(make_player_ent(k_world_scene_middle, sprite_batch_collection, assets)), m_tilemap(sprite_batch_collection)
+    : c_scene(sprite_batch_collection), m_player_ent(create_player_ent(k_world_scene_middle, sprite_batch_collection, assets)), m_tilemap(sprite_batch_collection)
 {
     for (int x = 0; x < k_tilemap_size; ++x)
     {
