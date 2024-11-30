@@ -11,6 +11,7 @@
 #include "c_audio.h"
 #include "c_main_menu.h"
 #include "c_world.h"
+#include "c_animation.h"
 
 constexpr int gk_permMemArenaSize = (1 << 20) * 256;
 extern cc::MemArena g_permMemArena; // Exists for the duration of the game.

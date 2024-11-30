@@ -131,6 +131,9 @@ GameCleanupInfoBitset init_game(Game &game)
     glfwSetWindowUserPointer(game.glfwWindow, &game.glfwCallbackMouseScroll);
     glfwSetScrollCallback(game.glfwWindow, glfw_scroll_callback);
 
+    // Set up animation types.
+    init_vanilla_anim_types();
+
     // Initialise the main menu.
     init_main_menu(game.mainMenu, game.assetGroupManager, get_glfw_window_size(game.glfwWindow));
 

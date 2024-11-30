@@ -4,6 +4,7 @@
 #include "c_input.h"
 #include "c_assets.h"
 #include "c_rendering.h"
+#include "c_animation.h"
 
 constexpr float gk_playerMoveSpd = 2.0f;
 
@@ -12,6 +13,7 @@ struct World;
 struct PlayerEnt
 {
     SpriteBatchSlotKey sbSlotKey;
+    AnimationInst animInst;
     cc::Vec2D pos;
     float rot;
 };
