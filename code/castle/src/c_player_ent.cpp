@@ -2,11 +2,15 @@
 
 #include "c_world.h"
 
+constexpr AssetID ik_playerEntTexID = make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX);
+
 static void write_player_ent_render_data(World &world, const AssetGroupManager &assetGroupManager)
 {
+    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_playerEntTexID);
+
     const SpriteBatchSlotWriteData writeData = {
         .pos = world.playerEnt.pos,
-        .srcRect = {0, 0, 24, 24}, // TEMP: Use some kind of animation system later.
+        .srcRect = {0, 0, texSize.x, texSize.y}, // TEMP: Use some kind of animation system later.
         .origin = {0.5f, 0.5f},
         .rot = world.playerEnt.rot,
         .scale = {1.0f, 1.0f},

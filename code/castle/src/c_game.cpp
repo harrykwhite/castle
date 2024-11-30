@@ -74,6 +74,9 @@ GameCleanupInfoBitset init_game(Game &game)
 
     glfwMakeContextCurrent(game.glfwWindow);
 
+    // Hide the cursor.
+    glfwSetInputMode(game.glfwWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
     // Initialise OpenGL function pointers.
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     {

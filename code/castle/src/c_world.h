@@ -20,6 +20,8 @@ struct World
     Camera cam;
 
     PlayerEnt playerEnt;
+
+    SpriteBatchSlotKey cursorSBSlotKey;
 };
 
 void init_world(World &world, const AssetGroupManager &assetGroupManager);

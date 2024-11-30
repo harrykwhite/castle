@@ -141,7 +141,7 @@ private:
 bool load_shader_progs(ShaderProgGLIDs &progGLIDs);
 void clean_shader_progs(ShaderProgGLIDs &progGLIDs);
 
-inline AssetID make_vanilla_asset_id(const int index)
+constexpr AssetID make_vanilla_asset_id(const int index)
 {
     return {
         .groupIndex = 0,
