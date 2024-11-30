@@ -186,7 +186,7 @@ void run_game_loop(Game &game)
                 if (game.inWorld)
                 {
                     // Execute world tick.
-                    world_tick(game.world, game.inputManager);
+                    world_tick(game.world, game.inputManager, game.assetGroupManager, windowSize);
                 }
                 else
                 {
@@ -211,7 +211,15 @@ void run_game_loop(Game &game)
 
         // Render.
         glfwSwapBuffers(game.glfwWindow);
-        draw_render_layers(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr, windowSize);
+        
+        if (game.inWorld)
+        {
+            draw_render_layers(game.world.renderer, Color::make_green(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam, windowSize);
+        }
+        else
+        {
+            draw_render_layers(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr, windowSize);
+        }
     }
 }
 
