@@ -9,6 +9,7 @@
 constexpr int gk_spriteQuadShaderProgVertCnt = 11;
 constexpr int gk_charQuadShaderProgVertCnt = 4;
 
+// NOTE: If there is a fixed limit on the number of assets in a mod, then the asset ID can be a single integer.
 struct AssetID
 {
     int groupIndex;

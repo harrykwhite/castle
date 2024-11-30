@@ -1,6 +1,7 @@
 #include "c_player_ent.h"
 
 #include "c_world.h"
+#include "c_game.h"
 
 constexpr AssetID ik_playerEntTexID = make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX);
 
@@ -26,7 +27,7 @@ void init_player_ent(World &world, const AssetGroupManager &assetGroupManager)
     world.playerEnt.animInst.frameInterval = 20;
 }
 
-void player_ent_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager, const cc::Vec2DInt windowSize)
+void player_ent_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
 {
     const cc::Vec2D moveAxis = {
         static_cast<float>(inputManager.is_key_down(KEY_D)) - inputManager.is_key_down(KEY_A),
@@ -35,7 +36,7 @@ void player_ent_tick(World &world, const InputManager &inputManager, const Asset
 
     world.playerEnt.pos += moveAxis * gk_playerMoveSpd;
 
-    world.playerEnt.rot = cc::calc_dir(world.playerEnt.pos, screen_to_camera_pos(inputManager.get_mouse_pos(), world.cam, windowSize));
+    world.playerEnt.rot = cc::calc_dir(world.playerEnt.pos, screen_to_camera_pos(inputManager.get_mouse_pos(), world.cam));
 
     write_player_ent_render_data(world, assetGroupManager);
 

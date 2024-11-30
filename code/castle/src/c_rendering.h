@@ -163,7 +163,7 @@ void clean_render_layer(RenderLayer &layer);
 void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerFactory layerFactory);
 void clean_renderer(Renderer &renderer);
 
-void draw_render_layers(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam, const cc::Vec2DInt windowSize);
+void draw_render_layers(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam);
 
 RenderLayer make_render_layer(const RenderLayerCreateInfo &createInfo);
 void clean_render_layer(RenderLayer &layer);
@@ -191,20 +191,4 @@ inline void set_char_batch_rot(Renderer &renderer, const CharBatchKey &key, cons
 inline void set_char_batch_blend(Renderer &renderer, const CharBatchKey &key, const Color &blend)
 {
     renderer.layers[key.layerIndex].charBatches.displayProps[key.batchIndex].blend = blend;
-}
-
-inline cc::Vec2D camera_to_screen_pos(const cc::Vec2D pos, const Camera &cam, const cc::Vec2DInt windowSize)
-{
-    return {
-        ((pos.x - cam.pos.x) * Camera::k_scale) + (windowSize.x / 2.0f),
-        ((pos.y - cam.pos.y) * Camera::k_scale) + (windowSize.y / 2.0f)
-    };
-}
-
-inline cc::Vec2D screen_to_camera_pos(const cc::Vec2D pos, const Camera &cam, const cc::Vec2DInt windowSize)
-{
-    return {
-        ((pos.x - (windowSize.x / 2.0f)) / Camera::k_scale) + cam.pos.x,
-        ((pos.y - (windowSize.y / 2.0f)) / Camera::k_scale) + cam.pos.y
-    };
 }

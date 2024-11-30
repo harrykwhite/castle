@@ -52,9 +52,9 @@ void clean_world(World &world)
     clean_renderer(world.renderer);
 }
 
-void world_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager, const cc::Vec2DInt windowSize)
+void world_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
 {
-    player_ent_tick(world, inputManager, assetGroupManager, windowSize);
+    player_ent_tick(world, inputManager, assetGroupManager);
 
     // Write cursor render data.
     {

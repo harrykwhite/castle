@@ -68,3 +68,5 @@ struct Game
 GameCleanupInfoBitset init_game(Game &game);
 void run_game_loop(Game &game);
 void clean_game(Game &game, const GameCleanupInfoBitset infoBitset);
+
+cc::Vec2DInt get_window_size();

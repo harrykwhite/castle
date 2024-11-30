@@ -8,4 +8,6 @@ struct Camera
     cc::Vec2D pos;
 };
 
-cc::Matrix4x4 make_camera_view_matrix(const Camera &cam, const cc::Vec2DInt windowSize);
+cc::Matrix4x4 make_camera_view_matrix(const Camera &cam);
+cc::Vec2D camera_to_screen_pos(const cc::Vec2D pos, const Camera &cam);
+cc::Vec2D screen_to_camera_pos(const cc::Vec2D pos, const Camera &cam);

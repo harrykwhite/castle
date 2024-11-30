@@ -180,7 +180,7 @@ void clean_renderer(Renderer &renderer)
     renderer = {};
 }
 
-void draw_render_layers(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam, const cc::Vec2DInt windowSize)
+void draw_render_layers(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam)
 {
     assert((renderer.camLayerCnt > 0) == (cam != nullptr));
 
@@ -193,7 +193,7 @@ void draw_render_layers(const Renderer &renderer, const Color &bgColor, const As
     std::iota(texUnits, texUnits + texUnitLimit, 0);
 
     // Create the projection and view matrices.
-    const auto projMat = cc::make_ortho_matrix(0.0f, windowSize.x, windowSize.y, 0.0f, -1.0f, 1.0f);
+    const auto projMat = cc::make_ortho_matrix(0.0f, get_window_size().x, get_window_size().y, 0.0f, -1.0f, 1.0f);
 
     // Define function for rendering a layer.
     auto renderLayer = [&assetGroupManager, &shaderProgGLIDs, texUnitLimit, texUnits, &projMat](const RenderLayer &layer, const cc::Matrix4x4 &viewMat)
@@ -258,7 +258,7 @@ void draw_render_layers(const Renderer &renderer, const Color &bgColor, const As
     // Render camera layers then non-camera ones.
     if (renderer.camLayerCnt > 0)
     {
-        const cc::Matrix4x4 camViewMat = make_camera_view_matrix(*cam, windowSize);
+        const cc::Matrix4x4 camViewMat = make_camera_view_matrix(*cam);
 
         int i = 0;
 

@@ -19,4 +19,4 @@ struct PlayerEnt
 };
 
 void init_player_ent(World &world, const AssetGroupManager &assetGroupManager);
-void player_ent_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager, const cc::Vec2DInt windowSize);
+void player_ent_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);

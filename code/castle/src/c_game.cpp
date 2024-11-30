@@ -5,17 +5,12 @@
 cc::MemArena g_permMemArena;
 cc::MemArena g_tempMemArena;
 
+cc::Vec2DInt ik_windowSize = {1280, 720};
+
 static inline double calc_valid_frame_dur(const double frameTime, const double frameTimeLast)
 {
     const double dur = frameTime - frameTimeLast;
     return dur >= 0.0 && dur <= Game::k_targTickDur * 8.0 ? dur : 0.0;
-}
-
-static inline cc::Vec2DInt get_glfw_window_size(GLFWwindow *const window)
-{
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    return {width, height};
 }
 
 static inline void glfw_scroll_callback(GLFWwindow *const window, const double xOffs, const double yOffs)
@@ -62,7 +57,7 @@ GameCleanupInfoBitset init_game(Game &game)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, false); // Show the window later once other things have been set up.
 
-    game.glfwWindow = glfwCreateWindow(1280, 720, gk_windowTitle, nullptr, nullptr); // TEMP: Initial window size will be determined dynamically later.
+    game.glfwWindow = glfwCreateWindow(ik_windowSize.x, ik_windowSize.y, gk_windowTitle, nullptr, nullptr); // TEMP: Initial window size will be determined dynamically later.
 
     if (!game.glfwWindow)
     {
@@ -135,7 +130,7 @@ GameCleanupInfoBitset init_game(Game &game)
     init_vanilla_anim_types();
 
     // Initialise the main menu.
-    init_main_menu(game.mainMenu, game.assetGroupManager, get_glfw_window_size(game.glfwWindow));
+    init_main_menu(game.mainMenu, game.assetGroupManager);
 
     // Show the window now that things have been set up.
     glfwShowWindow(game.glfwWindow);
@@ -154,16 +149,16 @@ void run_game_loop(Game &game)
     {
         cc::clear_mem_arena(g_tempMemArena);
 
-        const cc::Vec2DInt windowSizeBeforePoll = get_glfw_window_size(game.glfwWindow);
+        const cc::Vec2DInt windowSizeBeforePoll = ik_windowSize;
 
         glfwPollEvents();
 
-        const cc::Vec2DInt windowSize = get_glfw_window_size(game.glfwWindow);
+        glfwGetWindowSize(game.glfwWindow, &ik_windowSize.x, &ik_windowSize.y);
 
-        if (windowSize != windowSizeBeforePoll)
+        if (ik_windowSize != windowSizeBeforePoll)
         {
             // A change in window size has been detected; resize the viewport.
-            glViewport(0, 0, windowSize.x, windowSize.y);
+            glViewport(0, 0, ik_windowSize.x, ik_windowSize.y);
         }
 
         const double frameTimeLast = frameTime;
@@ -192,7 +187,7 @@ void run_game_loop(Game &game)
                 if (game.inWorld)
                 {
                     // Execute world tick.
-                    world_tick(game.world, game.inputManager, game.assetGroupManager, windowSize);
+                    world_tick(game.world, game.inputManager, game.assetGroupManager);
                 }
                 else
                 {
@@ -220,11 +215,11 @@ void run_game_loop(Game &game)
         
         if (game.inWorld)
         {
-            draw_render_layers(game.world.renderer, Color::make_green(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam, windowSize);
+            draw_render_layers(game.world.renderer, Color::make_green(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam);
         }
         else
         {
-            draw_render_layers(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr, windowSize);
+            draw_render_layers(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr);
         }
     }
 }
@@ -289,4 +284,9 @@ void clean_game(Game &game, const GameCleanupInfoBitset infoBitset)
     }
 
     game = {};
+}
+
+cc::Vec2DInt get_window_size()
+{
+    return ik_windowSize;
 }
