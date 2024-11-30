@@ -1,203 +1,200 @@
-#include <iostream>
-#include <vector>
 #include <algorithm>
-#include <memory>
-#include <utility>
-#include <castle_common/cc_math.h>
-#include <castle_common/cc_misc.h>
-#include <castle_common/cc_assets.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 #include "cap_shared.h"
 
-struct s_font_pack_info
+struct FontPackingInfo
 {
-    std::string file_path_end;
-    int pt_size;
+    const char *filePathEnd;
+    int ptSize;
 };
 
-struct s_font_data_with_pixels
-{
-    cc::s_font_data fd;
-    std::unique_ptr<cc::u_byte[]> tex_px_data;
+const FontPackingInfo ik_fontPackingInfos[] = {
+    {"\\fonts\\eb_garamond.ttf", 18},
+    {"\\fonts\\eb_garamond.ttf", 24},
+    {"\\fonts\\eb_garamond.ttf", 36},
+    {"\\fonts\\eb_garamond.ttf", 72}
 };
 
-const s_font_pack_info k_font_pack_infos[] = {
-    {"/fonts/eb_garamond.ttf", 36},
-    {"/fonts/eb_garamond.ttf", 48},
-    {"/fonts/eb_garamond.ttf", 72}
+static_assert(cc::VANILLA_FONT_CNT == CC_STATIC_ARRAY_LEN(ik_fontPackingInfos));
+
+struct FontDisplayInfoWithTexPixels
+{
+    cc::FontDisplayInfo info;
+    cc::Byte texPxData[cc::gk_texChannelCnt * cc::gk_texSizeLimit.x * cc::gk_texSizeLimit.y];
 };
 
-const int k_font_cnt = CC_STATIC_ARRAY_LEN(k_font_pack_infos);
-
-static inline int get_line_height(const FT_Face ft_face)
+static inline int get_line_height(const FT_Face ftFace)
 {
-    return ft_face->size->metrics.height >> 6;
+    return ftFace->size->metrics.height >> 6;
 }
 
-static int calc_largest_bitmap_width(const FT_Face ft_face, const FT_Library ft_lib)
+static int calc_largest_bitmap_width(const FT_Face ftFace, const FT_Library ftLib)
 {
     int width = 0;
 
-    for (int i = 0; i < cc::k_font_char_range_size; i++)
+    for (int i = 0; i < cc::gk_fontCharRangeSize; i++)
     {
-        FT_Load_Glyph(ft_face, FT_Get_Char_Index(ft_face, cc::k_font_char_range_begin + i), FT_LOAD_DEFAULT);
-        FT_Render_Glyph(ft_face->glyph, FT_RENDER_MODE_NORMAL);
+        FT_Load_Glyph(ftFace, FT_Get_Char_Index(ftFace, cc::gk_fontCharRangeBegin + i), FT_LOAD_DEFAULT);
+        FT_Render_Glyph(ftFace->glyph, FT_RENDER_MODE_NORMAL);
 
-        if (ft_face->glyph->bitmap.width > width)
+        if (ftFace->glyph->bitmap.width > width)
         {
-            width = ft_face->glyph->bitmap.width;
+            width = ftFace->glyph->bitmap.width;
         }
     }
 
     return width;
 }
 
-static cc::s_vec_2d_i calc_font_tex_size(const FT_Face ft_face, const FT_Library ft_lib)
+static cc::Vec2DInt calc_font_tex_size(const FT_Face ftFace, const FT_Library ftLib)
 {
-    const int largest_glyph_bitmap_width = calc_largest_bitmap_width(ft_face, ft_lib);
-    const int ideal_tex_width = largest_glyph_bitmap_width * cc::k_font_char_range_size;
+    const int largestGlyphBitmapWidth = calc_largest_bitmap_width(ftFace, ftLib);
+    const int idealTexWidth = largestGlyphBitmapWidth * cc::gk_fontCharRangeSize;
 
     return {
-        std::min(ideal_tex_width, cc::k_tex_size_limit.x),
-        get_line_height(ft_face) * ((ideal_tex_width / cc::k_tex_size_limit.x) + 1)
+        std::min(idealTexWidth, cc::gk_texSizeLimit.x),
+        get_line_height(ftFace) * ((idealTexWidth / cc::gk_texSizeLimit.x) + 1)
     };
 }
 
-static std::unique_ptr<s_font_data_with_pixels> get_font_data_with_px(const std::string &file_path, const int pt_size, const FT_Library ft_lib)
+static bool init_font_display_info_and_tex_pixels(FontDisplayInfoWithTexPixels *const infoWithPixels, const char *const filePath, const int ptSize, const FT_Library ftLib)
 {
-    auto font_data_with_px = std::make_unique<s_font_data_with_pixels>();
-
     // Set up the font face.
-    FT_Face ft_face;
+    FT_Face ftFace;
 
-    if (FT_New_Face(ft_lib, file_path.c_str(), 0, &ft_face))
+    if (FT_New_Face(ftLib, filePath, 0, &ftFace))
     {
-        std::cout << "ERROR: Failed to create a FreeType face object for font with file path \"" << file_path << "\"." << std::endl;
-        return nullptr;
+        cc::log_error("Failed to create a FreeType face object for font with file path \"%s\".", filePath);
+        return false;
     }
 
-    FT_Set_Char_Size(ft_face, pt_size << 6, 0, 96, 0);
+    FT_Set_Char_Size(ftFace, ptSize << 6, 0, 96, 0);
 
-    font_data_with_px->fd.line_height = get_line_height(ft_face);
+    infoWithPixels->info.lineHeight = get_line_height(ftFace);
 
     // Initialise the font texture, setting all the pixels to transparent white.
-    font_data_with_px->fd.tex_size = calc_font_tex_size(ft_face, ft_lib);
+    infoWithPixels->info.texSize = calc_font_tex_size(ftFace, ftLib);
 
-    if (font_data_with_px->fd.tex_size.y > cc::k_tex_size_limit.y)
+    if (infoWithPixels->info.texSize.y > cc::gk_texSizeLimit.y)
     {
-        std::cout << "ERROR: Font texture size is too large!" << std::endl;
-        return nullptr;
+        cc::log_error("Font texture size is too large!");
+        return false;
     }
 
-    const int tex_px_data_size = font_data_with_px->fd.tex_size.x * font_data_with_px->fd.tex_size.y * cc::k_font_tex_channel_cnt;
-    font_data_with_px->tex_px_data = std::make_unique<cc::u_byte[]>(tex_px_data_size);
+    const int texPxDataSize = infoWithPixels->info.texSize.x * infoWithPixels->info.texSize.y * cc::gk_texChannelCnt;
 
-    for (int i = 0; i < font_data_with_px->fd.tex_size.x * font_data_with_px->fd.tex_size.y; ++i)
+    for (int i = 0; i < infoWithPixels->info.texSize.x * infoWithPixels->info.texSize.y; ++i)
     {
-        const int px_data_index = i * cc::k_font_tex_channel_cnt;
+        const int pxDataIndex = i * cc::gk_texChannelCnt;
 
-        font_data_with_px->tex_px_data[px_data_index + 0] = 255;
-        font_data_with_px->tex_px_data[px_data_index + 1] = 255;
-        font_data_with_px->tex_px_data[px_data_index + 2] = 255;
-        font_data_with_px->tex_px_data[px_data_index + 3] = 0;
+        infoWithPixels->texPxData[pxDataIndex + 0] = 255;
+        infoWithPixels->texPxData[pxDataIndex + 1] = 255;
+        infoWithPixels->texPxData[pxDataIndex + 2] = 255;
+        infoWithPixels->texPxData[pxDataIndex + 3] = 0;
     }
 
     // Get and store information for all font characters.
-    int char_draw_x = 0;
-    int char_draw_y = 0;
+    int charDrawX = 0;
+    int charDrawY = 0;
 
-    for (int i = 0; i < cc::k_font_char_range_size; i++)
+    for (int i = 0; i < cc::gk_fontCharRangeSize; i++)
     {
-        const FT_UInt ft_char_index = FT_Get_Char_Index(ft_face, cc::k_font_char_range_begin + i);
+        const FT_UInt ftCharIndex = FT_Get_Char_Index(ftFace, cc::gk_fontCharRangeBegin + i);
 
-        FT_Load_Glyph(ft_face, ft_char_index, FT_LOAD_DEFAULT);
-        FT_Render_Glyph(ft_face->glyph, FT_RENDER_MODE_NORMAL);
+        FT_Load_Glyph(ftFace, ftCharIndex, FT_LOAD_DEFAULT);
+        FT_Render_Glyph(ftFace->glyph, FT_RENDER_MODE_NORMAL);
 
-        if (char_draw_x + ft_face->glyph->bitmap.width > cc::k_tex_size_limit.x)
+        if (charDrawX + ftFace->glyph->bitmap.width > cc::gk_texSizeLimit.x)
         {
-            char_draw_x = 0;
-            char_draw_y += font_data_with_px->fd.line_height;
+            charDrawX = 0;
+            charDrawY += infoWithPixels->info.lineHeight;
         }
 
-        font_data_with_px->fd.chars.hor_offsets[i] = ft_face->glyph->metrics.horiBearingX >> 6;
-        font_data_with_px->fd.chars.ver_offsets[i] = (ft_face->size->metrics.ascender - ft_face->glyph->metrics.horiBearingY) >> 6;
+        infoWithPixels->info.chars.horOffsets[i] = ftFace->glyph->metrics.horiBearingX >> 6;
+        infoWithPixels->info.chars.verOffsets[i] = (ftFace->size->metrics.ascender - ftFace->glyph->metrics.horiBearingY) >> 6;
 
-        font_data_with_px->fd.chars.hor_advances[i] = ft_face->glyph->metrics.horiAdvance >> 6;
+        infoWithPixels->info.chars.horAdvances[i] = ftFace->glyph->metrics.horiAdvance >> 6;
 
-        font_data_with_px->fd.chars.src_rects[i].x = char_draw_x;
-        font_data_with_px->fd.chars.src_rects[i].y = char_draw_y;
-        font_data_with_px->fd.chars.src_rects[i].width = ft_face->glyph->bitmap.width;
-        font_data_with_px->fd.chars.src_rects[i].height = ft_face->glyph->bitmap.rows;
+        infoWithPixels->info.chars.srcRects[i].x = charDrawX;
+        infoWithPixels->info.chars.srcRects[i].y = charDrawY;
+        infoWithPixels->info.chars.srcRects[i].width = ftFace->glyph->bitmap.width;
+        infoWithPixels->info.chars.srcRects[i].height = ftFace->glyph->bitmap.rows;
 
         // Set kernings (one per character combination).
-        for (int j = 0; j < cc::k_font_char_range_size; j++)
+        for (int j = 0; j < cc::gk_fontCharRangeSize; j++)
         {
-            FT_Vector ft_kerning;
-            FT_Get_Kerning(ft_face, FT_Get_Char_Index(ft_face, cc::k_font_char_range_begin + j), ft_char_index, FT_KERNING_DEFAULT, &ft_kerning);
+            FT_Vector ftKerning;
+            FT_Get_Kerning(ftFace, FT_Get_Char_Index(ftFace, cc::gk_fontCharRangeBegin + j), ftCharIndex, FT_KERNING_DEFAULT, &ftKerning);
 
-            font_data_with_px->fd.chars.kernings[(cc::k_font_char_range_size * i) + j] = ft_kerning.x >> 6;
+            infoWithPixels->info.chars.kernings[(cc::gk_fontCharRangeSize * i) + j] = ftKerning.x >> 6;
         }
 
         // Update the font texture's pixel data with the character.
-        for (int y = 0; y < font_data_with_px->fd.chars.src_rects[i].height; y++)
+        for (int y = 0; y < infoWithPixels->info.chars.srcRects[i].height; y++)
         {
-            for (int x = 0; x < font_data_with_px->fd.chars.src_rects[i].width; x++)
+            for (int x = 0; x < infoWithPixels->info.chars.srcRects[i].width; x++)
             {
-                const unsigned char px_alpha = ft_face->glyph->bitmap.buffer[(y * ft_face->glyph->bitmap.width) + x];
+                const unsigned char pxAlpha = ftFace->glyph->bitmap.buffer[(y * ftFace->glyph->bitmap.width) + x];
 
-                if (px_alpha > 0)
+                if (pxAlpha > 0)
                 {
-                    const int px_x = font_data_with_px->fd.chars.src_rects[i].x + x;
-                    const int px_y = font_data_with_px->fd.chars.src_rects[i].y + y;
-                    const int px_data_index = (px_y * font_data_with_px->fd.tex_size.x * cc::k_font_tex_channel_cnt) + (px_x * cc::k_font_tex_channel_cnt);
+                    const int pxX = infoWithPixels->info.chars.srcRects[i].x + x;
+                    const int pxY = infoWithPixels->info.chars.srcRects[i].y + y;
+                    const int pxDataIndex = (pxY * infoWithPixels->info.texSize.x * cc::gk_texChannelCnt) + (pxX * cc::gk_texChannelCnt);
 
-                    font_data_with_px->tex_px_data[px_data_index + 3] = px_alpha;
+                    infoWithPixels->texPxData[pxDataIndex + 3] = pxAlpha;
                 }
             }
         }
 
-        char_draw_x += font_data_with_px->fd.chars.src_rects[i].width;
+        charDrawX += infoWithPixels->info.chars.srcRects[i].width;
     }
 
-    FT_Done_Face(ft_face);
+    FT_Done_Face(ftFace);
 
-    return font_data_with_px;
+    return true;
 }
 
-bool pack_fonts(std::ofstream &assets_file_ofs, const std::string &assets_dir)
+bool pack_fonts(FILE *const assetFileStream, const char *const assetsDir, cc::MemArena &memArena)
 {
-    FT_Library ft_lib;
+    // Set up FreeType.
+    FT_Library ftLib;
 
-    if (FT_Init_FreeType(&ft_lib))
+    if (FT_Init_FreeType(&ftLib))
     {
-        std::cout << "ERROR: Failed to initialise FreeType!" << std::endl;
+        cc::log_error("Failed to initialise FreeType!");
         return false;
     }
 
-    for (auto &pack_info : k_font_pack_infos)
+    // Reserve memory for font display information and texture pixels (reused for every font).
+    const auto fontDisplayInfoWithTexPixels = cc::push_to_mem_arena<FontDisplayInfoWithTexPixels>(memArena);
+
+    for (const FontPackingInfo &packingInfo : ik_fontPackingInfos)
     {
-        const std::string font_file_path = assets_dir + pack_info.file_path_end;
+        // Determine the font file path.
+        char fontFilePath[gk_assetFilePathMaxLen + 1];
+        snprintf(fontFilePath, sizeof(fontFilePath), "%s%s", assetsDir, packingInfo.filePathEnd);
 
-        // Get the font data using FreeType.
-        const std::unique_ptr<s_font_data_with_pixels> font_data_with_px = get_font_data_with_px(font_file_path, pack_info.pt_size, ft_lib);
-
-        if (!font_data_with_px)
+        // Load the font data using FreeType.
+        if (!init_font_display_info_and_tex_pixels(fontDisplayInfoWithTexPixels, fontFilePath, packingInfo.ptSize, ftLib))
         {
-            FT_Done_FreeType(ft_lib);
+            FT_Done_FreeType(ftLib);
             return false;
         }
 
         // Write the font data to the file.
-        assets_file_ofs.write(reinterpret_cast<const char *>(&font_data_with_px->fd), sizeof(font_data_with_px->fd));
-        assets_file_ofs.write(reinterpret_cast<const char *>(font_data_with_px->tex_px_data.get()), font_data_with_px->fd.tex_size.x * font_data_with_px->fd.tex_size.y * cc::k_font_tex_channel_cnt);
+        fwrite(fontDisplayInfoWithTexPixels, sizeof(*fontDisplayInfoWithTexPixels), 1, assetFileStream);
 
-        std::cout << "Successfully packed font with file path \"" << font_file_path << "\" and point size " << pack_info.pt_size << "." << std::endl;
+        // Clear the font data for next time (more for ease of debugging).
+        memset(fontDisplayInfoWithTexPixels, 0, sizeof(*fontDisplayInfoWithTexPixels));
+
+        cc::log("Successfully packed font with file path \"%s\" and point size %d.", fontFilePath, packingInfo.ptSize);
     }
 
-    FT_Done_FreeType(ft_lib);
+    FT_Done_FreeType(ftLib);
 
     return true;
 }

@@ -1,12 +1,16 @@
 #pragma once
 
-#include <string>
-#include <fstream>
+#include <stdio.h>
+#include <castle_common/cc_debugging.h>
+#include <castle_common/cc_math.h>
+#include <castle_common/cc_assets.h>
+#include <castle_common/cc_misc.h>
+#include <castle_common/cc_mem.h>
+#include <castle_common/cc_io.h>
 
-bool pack_textures(std::ofstream &assets_file_ofs, const std::string &assets_dir);
-bool pack_shader_progs(std::ofstream &assets_file_ofs, const std::string &assets_dir);
-bool pack_fonts(std::ofstream &assets_file_ofs, const std::string &assets_dir);
+constexpr int gk_assetFilePathMaxLen = 255;
 
-extern const int k_tex_cnt;
-extern const int k_shader_prog_cnt;
-extern const int k_font_cnt;
+bool pack_textures(FILE *const assetFileStream, const char *const assetsDir);
+bool pack_fonts(FILE *const assetFileStream, const char *const assetsDir, cc::MemArena &memArena);
+bool pack_sounds(FILE *const assetFileStream, const char *const assetsDir, cc::MemArena &memArena);
+bool pack_music(FILE *const assetFileStream, const char *const assetsDir, cc::MemArena &memArena);

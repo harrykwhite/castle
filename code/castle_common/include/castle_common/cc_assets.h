@@ -5,29 +5,74 @@
 namespace cc
 {
 
-constexpr s_vec_2d_i k_tex_size_limit = {2048, 2048};
-constexpr int k_tex_channel_cnt = 4;
+const char *const gk_assetsFileName = "assets.dat";
 
-constexpr int k_font_char_range_begin = 32;
-constexpr int k_font_char_range_size = 95;
-constexpr int k_font_tex_channel_cnt = 4;
+constexpr Vec2DInt gk_texSizeLimit = {2048, 2048};
+constexpr int gk_texChannelCnt = 4;
 
-struct s_font_char_data
+constexpr int gk_fontCharRangeBegin = 32;
+constexpr int gk_fontCharRangeSize = 95;
+
+using AudioSample = short;
+
+enum VanillaTexIndex
 {
-    int hor_offsets[k_font_char_range_size];
-    int ver_offsets[k_font_char_range_size];
-    int hor_advances[k_font_char_range_size];
+    PLAYER_ENT_VANILLA_TEX,
+    DIRT_TILE_VANILLA_TEX,
+    STONE_TILE_VANILLA_TEX,
+    INV_SLOT_VANILLA_TEX,
+    CURSOR_VANILLA_TEX,
 
-    cc::s_rect src_rects[k_font_char_range_size];
-
-    int kernings[k_font_char_range_size * k_font_char_range_size];
+    VANILLA_TEX_CNT
 };
 
-struct s_font_data
+enum VanillaFontIndex
 {
-    int line_height;
-    s_font_char_data chars;
-    cc::s_vec_2d_i tex_size;
+    EB_GARAMOND_18_VANILLA_FONT,
+    EB_GARAMOND_24_VANILLA_FONT,
+    EB_GARAMOND_36_VANILLA_FONT,
+    EB_GARAMOND_72_VANILLA_FONT,
+
+    VANILLA_FONT_CNT
+};
+
+enum VanillaSoundIndex
+{
+    BLOOP_VANILLA_SOUND,
+
+    VANILLA_SOUND_CNT
+};
+
+enum VanillaMusicIndex
+{
+    BEAT_VANILLA_MUSIC,
+
+    VANILLA_MUSIC_CNT
+};
+
+struct FontCharsDisplayInfo
+{
+    int horOffsets[gk_fontCharRangeSize];
+    int verOffsets[gk_fontCharRangeSize];
+    int horAdvances[gk_fontCharRangeSize];
+
+    Rect srcRects[gk_fontCharRangeSize];
+
+    int kernings[gk_fontCharRangeSize * gk_fontCharRangeSize];
+};
+
+struct FontDisplayInfo
+{
+    int lineHeight;
+    FontCharsDisplayInfo chars;
+    Vec2DInt texSize;
+};
+
+struct AudioInfo
+{
+    int channelCnt;
+    int sampleCntPerChannel;
+    unsigned int sampleRate;
 };
 
 }

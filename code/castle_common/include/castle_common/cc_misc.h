@@ -5,9 +5,9 @@
 namespace cc
 {
 
-using u_byte = unsigned char;
+using Byte = unsigned char;
 
-struct s_version
+struct Version
 {
     int major;
     int minor;

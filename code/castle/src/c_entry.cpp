@@ -1,7 +1,9 @@
-#include <castle/c_game.h>
+#include "c_game.h"
 
 int main()
 {
-    c_game game;
-    game.run();
+    Game game = {};
+    const GameCleanupInfoBitset gameCleanupInfoBitset = init_game(game);
+    run_game_loop(game);
+    clean_game(game, gameCleanupInfoBitset);
 }

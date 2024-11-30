@@ -1,205 +1,172 @@
-#include <castle/c_input.h>
+#include "c_input.h"
 
-#include <iostream>
-#include <castle_common/cc_debugging.h>
-#include <optional>
-
-static int get_glfw_key_code(const ec_key_code key_code)
+static int get_glfw_key_code(const KeyCode keyCode)
 {
-    switch (key_code)
+    switch (keyCode)
     {
-        case ec_key_code::space: return GLFW_KEY_SPACE;
+        case KEY_SPACE: return GLFW_KEY_SPACE;
 
-        case ec_key_code::num_0: return GLFW_KEY_0;
-        case ec_key_code::num_1: return GLFW_KEY_1;
-        case ec_key_code::num_2: return GLFW_KEY_2;
-        case ec_key_code::num_3: return GLFW_KEY_3;
-        case ec_key_code::num_4: return GLFW_KEY_4;
-        case ec_key_code::num_5: return GLFW_KEY_5;
-        case ec_key_code::num_6: return GLFW_KEY_6;
-        case ec_key_code::num_7: return GLFW_KEY_7;
-        case ec_key_code::num_8: return GLFW_KEY_8;
-        case ec_key_code::num_9: return GLFW_KEY_9;
+        case KEY_0: return GLFW_KEY_0;
+        case KEY_1: return GLFW_KEY_1;
+        case KEY_2: return GLFW_KEY_2;
+        case KEY_3: return GLFW_KEY_3;
+        case KEY_4: return GLFW_KEY_4;
+        case KEY_5: return GLFW_KEY_5;
+        case KEY_6: return GLFW_KEY_6;
+        case KEY_7: return GLFW_KEY_7;
+        case KEY_8: return GLFW_KEY_8;
+        case KEY_9: return GLFW_KEY_9;
 
-        case ec_key_code::a: return GLFW_KEY_A;
-        case ec_key_code::b: return GLFW_KEY_B;
-        case ec_key_code::c: return GLFW_KEY_C;
-        case ec_key_code::d: return GLFW_KEY_D;
-        case ec_key_code::e: return GLFW_KEY_E;
-        case ec_key_code::f: return GLFW_KEY_F;
-        case ec_key_code::g: return GLFW_KEY_G;
-        case ec_key_code::h: return GLFW_KEY_H;
-        case ec_key_code::i: return GLFW_KEY_I;
-        case ec_key_code::j: return GLFW_KEY_J;
-        case ec_key_code::k: return GLFW_KEY_K;
-        case ec_key_code::l: return GLFW_KEY_L;
-        case ec_key_code::m: return GLFW_KEY_M;
-        case ec_key_code::n: return GLFW_KEY_N;
-        case ec_key_code::o: return GLFW_KEY_O;
-        case ec_key_code::p: return GLFW_KEY_P;
-        case ec_key_code::q: return GLFW_KEY_Q;
-        case ec_key_code::r: return GLFW_KEY_R;
-        case ec_key_code::s: return GLFW_KEY_S;
-        case ec_key_code::t: return GLFW_KEY_T;
-        case ec_key_code::u: return GLFW_KEY_U;
-        case ec_key_code::v: return GLFW_KEY_V;
-        case ec_key_code::w: return GLFW_KEY_W;
-        case ec_key_code::x: return GLFW_KEY_X;
-        case ec_key_code::y: return GLFW_KEY_Y;
-        case ec_key_code::z: return GLFW_KEY_Z;
+        case KEY_A: return GLFW_KEY_A;
+        case KEY_B: return GLFW_KEY_B;
+        case KEY_C: return GLFW_KEY_C;
+        case KEY_D: return GLFW_KEY_D;
+        case KEY_E: return GLFW_KEY_E;
+        case KEY_F: return GLFW_KEY_F;
+        case KEY_G: return GLFW_KEY_G;
+        case KEY_H: return GLFW_KEY_H;
+        case KEY_I: return GLFW_KEY_I;
+        case KEY_J: return GLFW_KEY_J;
+        case KEY_K: return GLFW_KEY_K;
+        case KEY_L: return GLFW_KEY_L;
+        case KEY_M: return GLFW_KEY_M;
+        case KEY_N: return GLFW_KEY_N;
+        case KEY_O: return GLFW_KEY_O;
+        case KEY_P: return GLFW_KEY_P;
+        case KEY_Q: return GLFW_KEY_Q;
+        case KEY_R: return GLFW_KEY_R;
+        case KEY_S: return GLFW_KEY_S;
+        case KEY_T: return GLFW_KEY_T;
+        case KEY_U: return GLFW_KEY_U;
+        case KEY_V: return GLFW_KEY_V;
+        case KEY_W: return GLFW_KEY_W;
+        case KEY_X: return GLFW_KEY_X;
+        case KEY_Y: return GLFW_KEY_Y;
+        case KEY_Z: return GLFW_KEY_Z;
 
-        case ec_key_code::escape: return GLFW_KEY_ESCAPE;
-        case ec_key_code::enter: return GLFW_KEY_ENTER;
-        case ec_key_code::tab: return GLFW_KEY_TAB;
+        case KEY_ESCAPE: return GLFW_KEY_ESCAPE;
+        case KEY_ENTER: return GLFW_KEY_ENTER;
+        case KEY_TAB: return GLFW_KEY_TAB;
 
-        case ec_key_code::right: return GLFW_KEY_RIGHT;
-        case ec_key_code::left: return GLFW_KEY_LEFT;
-        case ec_key_code::down: return GLFW_KEY_DOWN;
-        case ec_key_code::up: return GLFW_KEY_UP;
+        case KEY_RIGHT: return GLFW_KEY_RIGHT;
+        case KEY_LEFT: return GLFW_KEY_LEFT;
+        case KEY_DOWN: return GLFW_KEY_DOWN;
+        case KEY_UP: return GLFW_KEY_UP;
 
-        case ec_key_code::f1: return GLFW_KEY_F1;
-        case ec_key_code::f2: return GLFW_KEY_F2;
-        case ec_key_code::f3: return GLFW_KEY_F3;
-        case ec_key_code::f4: return GLFW_KEY_F4;
-        case ec_key_code::f5: return GLFW_KEY_F5;
-        case ec_key_code::f6: return GLFW_KEY_F6;
-        case ec_key_code::f7: return GLFW_KEY_F7;
-        case ec_key_code::f8: return GLFW_KEY_F8;
-        case ec_key_code::f9: return GLFW_KEY_F9;
-        case ec_key_code::f10: return GLFW_KEY_F10;
-        case ec_key_code::f11: return GLFW_KEY_F11;
-        case ec_key_code::f12: return GLFW_KEY_F12;
+        case KEY_F1: return GLFW_KEY_F1;
+        case KEY_F2: return GLFW_KEY_F2;
+        case KEY_F3: return GLFW_KEY_F3;
+        case KEY_F4: return GLFW_KEY_F4;
+        case KEY_F5: return GLFW_KEY_F5;
+        case KEY_F6: return GLFW_KEY_F6;
+        case KEY_F7: return GLFW_KEY_F7;
+        case KEY_F8: return GLFW_KEY_F8;
+        case KEY_F9: return GLFW_KEY_F9;
+        case KEY_F10: return GLFW_KEY_F10;
+        case KEY_F11: return GLFW_KEY_F11;
+        case KEY_F12: return GLFW_KEY_F12;
 
-        case ec_key_code::left_shift: return GLFW_KEY_LEFT_SHIFT;
-        case ec_key_code::left_control: return GLFW_KEY_LEFT_CONTROL;
-        case ec_key_code::left_alt: return GLFW_KEY_LEFT_ALT;
+        case KEY_LEFT_SHIFT: return GLFW_KEY_LEFT_SHIFT;
+        case KEY_LEFT_CONTROL: return GLFW_KEY_LEFT_CONTROL;
+        case KEY_LEFT_ALT: return GLFW_KEY_LEFT_ALT;
+
+        default: return GLFW_KEY_UNKNOWN;
     }
-
-    return GLFW_KEY_UNKNOWN;
 }
 
-static u_keys_down_bits get_keys_down_bits(GLFWwindow *const glfw_window)
+static KeysDownBits get_keys_down_bits(GLFWwindow *const glfwWindow)
 {
-    u_keys_down_bits keys_down_bits = 0;
+    KeysDownBits keysDownBits = 0;
 
-    for (int i = 0; i < k_key_code_cnt; ++i)
+    for (int i = 0; i < KEY_CODE_CNT; ++i)
     {
-        if (glfwGetKey(glfw_window, get_glfw_key_code(static_cast<ec_key_code>(i))) == GLFW_PRESS)
+        if (glfwGetKey(glfwWindow, get_glfw_key_code(static_cast<KeyCode>(i))) == GLFW_PRESS)
         {
-            keys_down_bits |= static_cast<u_keys_down_bits>(1) << i;
+            keysDownBits |= static_cast<KeysDownBits>(1) << i;
         }
     }
 
-    return keys_down_bits;
+    return keysDownBits;
 }
 
-static cc::s_vec_2d get_mouse_pos(GLFWwindow *const glfw_window)
+static MouseButtonsDownBits get_mouse_buttons_down_bits(GLFWwindow *const glfwWindow)
 {
-    double mouse_x_dbl, mouse_y_dbl;
-    glfwGetCursorPos(glfw_window, &mouse_x_dbl, &mouse_y_dbl);
-    return cc::s_vec_2d {static_cast<float>(mouse_x_dbl), static_cast<float>(mouse_y_dbl)};
-}
+    MouseButtonsDownBits mouseButtonsDownBits = 0;
 
-static u_mouse_buttons_down_bits get_mouse_buttons_down_bits(GLFWwindow *const glfw_window)
-{
-    u_mouse_buttons_down_bits mouse_buttons_down_bits = 0;
-
-    for (int i = 0; i < k_mouse_button_code_cnt; ++i)
+    for (int i = 0; i < MOUSE_BUTTON_CODE_CNT; ++i)
     {
-        if (glfwGetMouseButton(glfw_window, i) == GLFW_PRESS)
+        if (glfwGetMouseButton(glfwWindow, i) == GLFW_PRESS)
         {
-            mouse_buttons_down_bits |= static_cast<u_mouse_buttons_down_bits>(1) << i;
+            mouseButtonsDownBits |= static_cast<MouseButtonsDownBits>(1) << i;
         }
     }
 
-    return mouse_buttons_down_bits;
+    return mouseButtonsDownBits;
 }
 
-static int get_gamepad_glfw_joystick_index()
+static cc::Vec2D get_mouse_pos(GLFWwindow *const glfwWindow)
 {
+    double mouseXDbl, mouseYDbl;
+    glfwGetCursorPos(glfwWindow, &mouseXDbl, &mouseYDbl);
+    return {static_cast<float>(mouseXDbl), static_cast<float>(mouseYDbl)};
+}
+
+static GamepadState create_gamepad_state()
+{
+    GamepadState state = {};
+
+    // Search for the first active gamepad and if found update the gamepad state using it.
     for (int i = 0; i <= GLFW_JOYSTICK_LAST; i++)
     {
-        if (glfwJoystickPresent(i) && glfwJoystickIsGamepad(i))
+        if (!glfwJoystickPresent(i) || !glfwJoystickIsGamepad(i))
         {
-            return i;
+            continue;
         }
-    }
 
-    return -1;
-}
+        GLFWgamepadstate glfwGamepadState;
 
-static std::optional<GLFWgamepadstate> get_glfw_gamepad_state(int gamepad_glfw_joystick_index)
-{
-    if (gamepad_glfw_joystick_index == -1)
-    {
-        return std::nullopt;
-    }
-
-    GLFWgamepadstate glfw_gamepad_state;
-
-    if (!glfwGetGamepadState(gamepad_glfw_joystick_index, &glfw_gamepad_state))
-    {
-        return std::nullopt;
-    }
-
-    return glfw_gamepad_state;
-}
-
-static u_gamepad_buttons_down_bits get_gamepad_buttons_down_bits(const std::optional<GLFWgamepadstate> &glfw_gamepad_state)
-{
-    if (!glfw_gamepad_state.has_value())
-    {
-        return 0;
-    }
-
-    u_gamepad_buttons_down_bits gamepad_buttons_down_bits = 0;
-
-    for (int i = 0; i < k_gamepad_button_code_cnt; i++)
-    {
-        if (glfw_gamepad_state->buttons[i] == GLFW_PRESS)
+        if (!glfwGetGamepadState(i, &glfwGamepadState))
         {
-            gamepad_buttons_down_bits |= static_cast<u_gamepad_buttons_down_bits>(1) << i;
+            break;
         }
+
+        state.connected = true;
+        state.glfwJoystickIndex = i;
+
+        // Store which gamepad buttons are down.
+        for (int j = 0; j < GAMEPAD_BUTTON_CODE_CNT; j++)
+        {
+            if (glfwGamepadState.buttons[j] == GLFW_PRESS)
+            {
+                state.buttonsDownBits |= static_cast<GamepadButtonsDownBits>(1) << j;
+            }
+        }
+
+        // Store gamepad axis values.
+        for (int j = 0; j < GAMEPAD_AXIS_CODE_CNT; j++)
+        {
+            state.axisValues[j] = glfwGamepadState.axes[j];
+        }
+
+        break;
     }
 
-    return gamepad_buttons_down_bits;
+    return state;
 }
 
-static std::array<float, k_gamepad_axis_code_cnt> get_gamepad_axis_values(const std::optional<GLFWgamepadstate> &glfw_gamepad_state)
+InputState InputState::make(GLFWwindow *const glfwWindow, const int mouseScroll)
 {
-    if (!glfw_gamepad_state.has_value())
-    {
-        return {};
-    }
-
-    std::array<float, k_gamepad_axis_code_cnt> gamepad_axis_values;
-
-    for (int i = 0; i < k_gamepad_axis_code_cnt; i++)
-    {
-        gamepad_axis_values[i] = glfw_gamepad_state->axes[i];
-    }
-
-    return gamepad_axis_values;
+    InputState state;
+    state.keysDownBits = get_keys_down_bits(glfwWindow);
+    state.mouseButtonsDownBits = get_mouse_buttons_down_bits(glfwWindow);
+    state.mousePos = get_mouse_pos(glfwWindow);
+    state.mouseScroll = mouseScroll;
+    state.gamepadState = create_gamepad_state();
+    return state;
 }
 
-s_input_state create_input_state(GLFWwindow *const glfw_window, const int mouse_scroll)
+void InputManager::refresh_states(GLFWwindow *const glfwWindow, const int mouseScroll)
 {
-    const int gamepad_glfw_joystick_index = get_gamepad_glfw_joystick_index();
-    const std::optional<GLFWgamepadstate> glfw_gamepad_state = get_glfw_gamepad_state(gamepad_glfw_joystick_index);
-
-    return {
-        get_keys_down_bits(glfw_window),
-        get_mouse_pos(glfw_window),
-        get_mouse_buttons_down_bits(glfw_window),
-        mouse_scroll,
-        gamepad_glfw_joystick_index,
-        get_gamepad_buttons_down_bits(glfw_gamepad_state),
-        get_gamepad_axis_values(glfw_gamepad_state)
-    };
-}
-
-void c_input_manager::refresh(GLFWwindow *const glfw_window, const int mouse_scroll)
-{
-    m_state_last = m_state;
-    m_state = create_input_state(glfw_window, mouse_scroll);
+    m_stateLast = m_state;
+    m_state = InputState::make(glfwWindow, mouseScroll);
 }

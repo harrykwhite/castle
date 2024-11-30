@@ -1,41 +1,67 @@
-#include <iostream>
 #include "cap_shared.h"
 
-constexpr int k_assets_file_path_buf_size = 128;
+constexpr int ik_memArenaSize = (1 << 20) * 64;
 
-int main(const int arg_cnt, const char *const *const args)
+int main(const int argCnt, const char *const *const args)
 {
-    if (arg_cnt != 3)
+    if (argCnt != 3)
     {
-        std::cout << "ERROR: An assets directory and an assets file path must both be provided as command-line arguments!" << std::endl;
-        return 1;
+        cc::log_error("An assets directory and an output assets file path must both be provided as command-line arguments!");
+        return EXIT_FAILURE;
     }
 
-    const std::string assets_dir = args[1];
-    const std::string assets_file_path = args[2];
+    const char *const assetsDir = args[1];
+    const char *const assetsFilePath = args[2];
+
+    // Ensure the assets file name is correct.
+    const char *const assetsFileName = cc::extract_filename_from_path(assetsFilePath);
+
+    if (strcmp(cc::gk_assetsFileName, assetsFileName))
+    {
+        cc::log_error("The output assets file must be named \"%s\"!", cc::gk_assetsFileName);
+        return EXIT_FAILURE;
+    }
 
     // Open the assets file.
-    std::ofstream assets_file_ofs(assets_file_path, std::ios::binary);
+    FILE *const assetsFileStream = fopen(assetsFilePath, "wb");
 
-    if (!assets_file_ofs)
+    if (!assetsFileStream)
     {
-        std::cout << "ERROR: Failed to open assets file with path \"" << assets_file_path << "\"!" << std::endl;
-        return 1;
+        cc::log_error("Failed to create or replace assets file with path \"%s\"!", assetsFilePath);
+        return EXIT_FAILURE;
     }
 
     // Write asset counts to the file header.
-    assets_file_ofs.write(reinterpret_cast<const char *>(&k_tex_cnt), sizeof(k_tex_cnt));
-    assets_file_ofs.write(reinterpret_cast<const char *>(&k_shader_prog_cnt), sizeof(k_shader_prog_cnt));
-    assets_file_ofs.write(reinterpret_cast<const char *>(&k_font_cnt), sizeof(k_font_cnt));
+    const int texCnt = cc::VANILLA_TEX_CNT;
+    fwrite(&texCnt, sizeof(texCnt), 1, assetsFileStream);
 
-    // Pack textures and shader programs into assets file.
-    if (!pack_textures(assets_file_ofs, assets_dir)
-        || !pack_shader_progs(assets_file_ofs, assets_dir)
-        || !pack_fonts(assets_file_ofs, assets_dir))
+    const int fontCnt = cc::VANILLA_FONT_CNT;
+    fwrite(&fontCnt, sizeof(fontCnt), 1, assetsFileStream);
+
+    const int sndCnt = cc::VANILLA_SOUND_CNT;
+    fwrite(&sndCnt, sizeof(sndCnt), 1, assetsFileStream);
+
+    const int musicCnt = cc::VANILLA_MUSIC_CNT;
+    fwrite(&musicCnt, sizeof(musicCnt), 1, assetsFileStream);
+
+    // Create the memory arena.
+    cc::MemArena memArena = {};
+    cc::init_mem_arena(memArena, ik_memArenaSize);
+
+    // Pack assets.
+    const bool packingSuccessful = pack_textures(assetsFileStream, assetsDir)
+        && pack_fonts(assetsFileStream, assetsDir, memArena)
+        && pack_sounds(assetsFileStream, assetsDir, memArena)
+        && pack_music(assetsFileStream, assetsDir, memArena);
+
+    cc::clean_mem_arena(memArena);
+    fclose(assetsFileStream);
+
+    if (!packingSuccessful)
     {
-        std::remove(assets_file_path.c_str());
-        return 1;
+        remove(assetsFilePath);
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

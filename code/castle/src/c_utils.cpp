@@ -1,48 +1,91 @@
-#include <castle/c_utils.h>
+#include "c_utils.h"
 
-int c_heap_bitset::get_first_inactive_bit_index() const
+bool are_all_bits_active(const cc::Byte *const bytes, const int bitCnt)
 {
-    for (int i = 0; i < CC_STATIC_ARRAY_LEN(m_bytes); ++i)
+    assert(bitCnt > 0);
+
+    const int byteCnt = bit_to_byte_cnt(bitCnt);
+
+    for (int i = 0; i < byteCnt - 1; ++i)
     {
-        if (m_bytes[i] == 0xFF)
+        if (bytes[i] != 0xFF)
+        {
+            return false;
+        }
+    }
+
+    const cc::Byte lastByteMask = (1 << (bitCnt % 8)) - 1;
+
+    if ((bytes[byteCnt - 1] & lastByteMask) != lastByteMask)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+int first_active_bit_index(const cc::Byte *const bytes, const int bitCnt)
+{
+    assert(bitCnt > 0);
+
+    const int byteCnt = bit_to_byte_cnt(bitCnt);
+
+    for (int i = 0; i < byteCnt - 1; ++i)
+    {
+        if (!bytes[i])
         {
             continue;
         }
 
         for (int j = 0; j < 8; ++j)
         {
-            if (!is_bit_active(j))
+            if (bytes[i] & (1 << j))
             {
                 return (i * 8) + j;
             }
         }
     }
 
+    for (int i = 0; i < bitCnt % 8; ++i)
+    {
+        if (bytes[byteCnt - 1] & (1 << i))
+        {
+            return ((byteCnt - 1) * 8) + i;
+        }
+    }
+
     return -1;
 }
 
-bool c_heap_bitset::is_full() const
+int first_inactive_bit_index(const cc::Byte *const bytes, const int bitCnt)
 {
-    for (int i = 0; i < m_byte_cnt; ++i)
+    assert(bitCnt > 0);
+
+    const int byteCnt = bit_to_byte_cnt(bitCnt);
+
+    for (int i = 0; i < byteCnt - 1; ++i)
     {
-        if (m_bytes[i] != 0xFF)
+        if (bytes[i] == 0xFF)
         {
-            return false;
+            continue;
+        }
+
+        for (int j = 0; j < 8; ++j)
+        {
+            if (!(bytes[i] & (1 << j)))
+            {
+                return (i * 8) + j;
+            }
         }
     }
 
-    return true;
-}
-
-bool c_heap_bitset::is_clear() const
-{
-    for (int i = 0; i < m_byte_cnt; ++i)
+    for (int i = 0; i < bitCnt % 8; ++i)
     {
-        if (m_bytes[i] != 0)
+        if (!(bytes[byteCnt - 1] & (1 << i)))
         {
-            return false;
+            return ((byteCnt - 1) * 8) + i;
         }
     }
 
-    return true;
+    return -1;
 }
