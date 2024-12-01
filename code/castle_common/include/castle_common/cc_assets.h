@@ -18,6 +18,7 @@ using AudioSample = short;
 enum VanillaTexIndex
 {
     PLAYER_ENT_VANILLA_TEX,
+    ENEMY_ENT_VANILLA_TEX,
     DIRT_TILE_VANILLA_TEX,
     STONE_TILE_VANILLA_TEX,
     INV_SLOT_VANILLA_TEX,

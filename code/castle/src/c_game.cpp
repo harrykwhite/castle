@@ -211,16 +211,16 @@ void run_game_loop(Game &game)
         }
 
         // Render.
-        glfwSwapBuffers(game.glfwWindow);
-        
         if (game.inWorld)
         {
-            draw_render_layers(game.world.renderer, Color::make_green(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam);
+            draw_render_layers(game.world.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam);
         }
         else
         {
             draw_render_layers(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr);
         }
+
+        glfwSwapBuffers(game.glfwWindow);
     }
 }
 

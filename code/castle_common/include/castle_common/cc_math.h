@@ -81,6 +81,10 @@ struct Vec2DInt
 {
     int x, y;
 
+    operator struct Vec2D() const {
+        return Vec2D(x, y);
+    }
+
     constexpr Vec2DInt operator+(const Vec2DInt &other) const
     {
         return {x + other.x, y + other.y};
@@ -159,53 +163,16 @@ struct Matrix4x4
     }
 };
 
-union Rect
-{
-    struct
-    {
-        int x, y;
-        int width, height;
-    };
-
-    struct
-    {
-        Vec2DInt pos;
-        Vec2DInt size;
-    };
-
-    inline int right() const
-    {
-        return x + width;
-    }
-
-    inline int bottom() const
-    {
-        return y + height;
-    }
-
-    bool operator==(const Rect &other) const
-    {
-        return pos == other.pos && size == other.size;
-    }
-
-    bool operator!=(const Rect &other) const
-    {
-        return !(*this == other);
-    }
-};
-
 union RectFloat
 {
-    struct
-    {
-        float x, y;
-        float width, height;
-    };
-
-    struct
-    {
+    struct {
         Vec2D pos;
         Vec2D size;
+    };
+
+    struct {
+        float x, y;
+        float width, height;
     };
 
     inline float right() const
@@ -224,6 +191,43 @@ union RectFloat
     }
 
     bool operator!=(const RectFloat &other) const
+    {
+        return !(*this == other);
+    }
+};
+
+union Rect
+{
+    struct {
+        Vec2DInt pos;
+        Vec2DInt size;
+    };
+
+    struct {
+        int x, y;
+        int width, height;
+    };
+
+    operator union RectFloat() const {
+        return {pos, size};
+    }
+
+    inline int right() const
+    {
+        return x + width;
+    }
+
+    inline int bottom() const
+    {
+        return y + height;
+    }
+
+    bool operator==(const Rect &other) const
+    {
+        return pos == other.pos && size == other.size;
+    }
+
+    bool operator!=(const Rect &other) const
     {
         return !(*this == other);
     }
@@ -250,11 +254,6 @@ inline Matrix4x4 make_ortho_matrix(const float left, const float right, const fl
     mat[3][2] = -(far + near) / (far - near);
     mat[3][3] = 1.0f;
     return mat;
-}
-
-inline bool do_rects_intersect(const Rect &a, const Rect &b)
-{
-    return a.right() > b.x && b.right() > a.x && a.bottom() > b.y && b.bottom() > a.y;
 }
 
 inline bool do_rects_intersect(const RectFloat &a, const RectFloat &b)

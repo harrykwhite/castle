@@ -11,7 +11,7 @@ using ALID = ALuint;
 
 constexpr int bit_to_byte_cnt(const int bitCnt)
 {
-    return (bitCnt + 7) & ~7;
+    return ((bitCnt + 7) & ~7) / 8;
 }
 
 template<int Bits>

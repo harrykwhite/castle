@@ -1,6 +1,5 @@
-#include "c_player_ent.h"
-
 #include "c_world.h"
+
 #include "c_game.h"
 
 constexpr AssetID ik_playerEntTexID = make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX);
@@ -24,6 +23,10 @@ static void write_player_ent_render_data(World &world, const AssetGroupManager &
 void init_player_ent(World &world, const AssetGroupManager &assetGroupManager)
 {
     world.playerEnt.sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_PLAYER_ENT_LAYER, make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX));
+    
+    //SpriteBatchSlotKey testKey = take_any_sprite_batch_slot(world.renderer, WORLD_ENEMY_ENT_LAYER, make_vanilla_asset_id(cc::ENEMY_ENT_VANILLA_TEX));
+    //write_to_sprite_batch_slot(world.renderer, testKey, {cc::Vec2D {0.0f, 0.0f}, {0, 0, 20, 20}, {0.5f, 0.5f}, 0.0f, {1.0f, 1.0f}, 1.0f}, assetGroupManager);
+
     world.playerEnt.animInst.frameInterval = 20;
 }
 
