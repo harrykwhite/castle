@@ -41,14 +41,14 @@ enum CoreFontIndex
 
 enum CoreSoundIndex
 {
-    BLOOP_SOUND,
+    SWING_SOUND,
 
     CORE_SOUND_CNT
 };
 
 enum CoreMusicIndex
 {
-    BEAT_MUSIC,
+    COMBAT_MUSIC,
 
     CORE_MUSIC_CNT
 };

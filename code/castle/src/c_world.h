@@ -5,6 +5,7 @@
 #include "c_assets.h"
 #include "c_rendering.h"
 #include "c_animation.h"
+#include "c_audio.h"
 
 constexpr int gk_enemyEntLimit = 64;
 constexpr int gk_hitboxLimit = 16;
@@ -68,12 +69,12 @@ struct World
     SpriteBatchSlotKey cursorSBSlotKey;
 };
 
-void init_world(World &world, cc::MemArena &permMemArena, const AssetGroupManager &assetGroupManager);
+void init_world(World &world, MusicManager &musicManager, cc::MemArena &permMemArena, cc::MemArena &tempMemArena, const AssetGroupManager &assetGroupManager);
 void clean_world(World &world);
-void world_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);
+void world_tick(World &world, SoundManager &soundManager, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);
 
 void init_player_ent(World &world, const AssetGroupManager &assetGroupManager);
-void player_ent_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);
+void player_ent_tick(World &world, SoundManager &soundManager, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);
 
 int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager);
 void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &assetGroupManager);

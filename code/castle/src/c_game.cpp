@@ -207,7 +207,7 @@ void run_game_loop(Game &game)
                 if (game.inWorld)
                 {
                     // Execute world tick.
-                    world_tick(game.world, game.inputManager, game.assetGroupManager);
+                    world_tick(game.world, game.soundManager, game.inputManager, game.assetGroupManager);
                 }
                 else
                 {
@@ -221,7 +221,7 @@ void run_game_loop(Game &game)
                         cc::log("Going to world...");
                         clean_main_menu(game.mainMenu);
                         game.inWorld = true;
-                        init_world(game.world, game.permMemArena, game.assetGroupManager);
+                        init_world(game.world, game.musicManager, game.permMemArena, game.tempMemArena, game.assetGroupManager);
                     }
                 }
 

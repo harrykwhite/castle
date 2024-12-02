@@ -55,7 +55,7 @@ void init_player_ent(World &world, const AssetGroupManager &assetGroupManager)
     world.playerEnt.sword.rotOffs = calc_sword_rot_offs_targ(world.playerEnt.sword);
 }
 
-void player_ent_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
+void player_ent_tick(World &world, SoundManager &soundManager, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
 {
     PlayerEnt &ent = world.playerEnt;
 
@@ -75,6 +75,8 @@ void player_ent_tick(World &world, const InputManager &inputManager, const Asset
     if (inputManager.is_mouse_button_pressed(MOUSE_BUTTON_LEFT))
     {
         ent.sword.rotNeg = !ent.sword.rotNeg;
+
+        soundManager.add_and_play_src(make_core_asset_id(cc::SWING_SOUND), assetGroupManager);
 
         const cc::Vec2D hitboxCenterPos = ent.pos + cc::make_dir_vec_2d(ent.rot, ik_swordHitboxDist);
 

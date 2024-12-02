@@ -54,7 +54,7 @@ static void write_cursor_render_data(World &world, const InputManager &inputMana
     write_to_sprite_batch_slot(world.renderer, world.cursorSBSlotKey, writeData, assetGroupManager);
 }
 
-void init_world(World &world, cc::MemArena &permMemArena, const AssetGroupManager &assetGroupManager)
+void init_world(World &world, MusicManager &musicManager, cc::MemArena &permMemArena, cc::MemArena &tempMemArena, const AssetGroupManager &assetGroupManager)
 {
     init_renderer(world.renderer, permMemArena, WORLD_LAYER_CNT, WORLD_HITBOX_LAYER + 1, render_layer_factory);
 
@@ -73,6 +73,10 @@ void init_world(World &world, cc::MemArena &permMemArena, const AssetGroupManage
     StaticBitset<gk_hitboxLimit> hitboxActivity;
 
     world.cursorSBSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_CURSOR_LAYER, make_core_asset_id(cc::CURSOR_TEX));
+
+    // Start combat music.
+    const MusicSrcID combatMusicSrcID = musicManager.add_src(make_core_asset_id(cc::COMBAT_MUSIC), assetGroupManager);
+    musicManager.play_src(tempMemArena, combatMusicSrcID, assetGroupManager);
 }
 
 void clean_world(World &world)
@@ -80,7 +84,7 @@ void clean_world(World &world)
     clean_renderer(world.renderer);
 }
 
-void world_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
+void world_tick(World &world, SoundManager &soundManager, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
 {
     // Reset hitboxes.
     for (int i = 0; i < gk_hitboxLimit; ++i)
@@ -95,7 +99,7 @@ void world_tick(World &world, const InputManager &inputManager, const AssetGroup
     }
 
     // Execute player tick.
-    player_ent_tick(world, inputManager, assetGroupManager);
+    player_ent_tick(world, soundManager, inputManager, assetGroupManager);
 
     // Execute enemy ticks.
     for (int i = 0; i < gk_enemyEntLimit; ++i)

@@ -2,13 +2,13 @@
 #include "cap_shared.h"
 
 static const char *const ik_soundFilePathEnds[] = {
-    "\\sounds\\bloop.wav"
+    "\\sounds\\swing.wav"
 };
 
 static_assert(cc::CORE_SOUND_CNT == CC_STATIC_ARRAY_LEN(ik_soundFilePathEnds));
 
 static const char *const ik_musicFilePathEnds[] = {
-    "\\music\\beat.wav"
+    "\\music\\combat.wav"
 };
 
 static_assert(cc::CORE_MUSIC_CNT == CC_STATIC_ARRAY_LEN(ik_musicFilePathEnds));
