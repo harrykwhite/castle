@@ -233,6 +233,11 @@ union Rect
     }
 };
 
+struct Range
+{
+    int begin, end;
+};
+
 inline Matrix4x4 make_identity_matrix()
 {
     Matrix4x4 mat = {};

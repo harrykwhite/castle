@@ -5,13 +5,15 @@
 
 #include "cap_shared.h"
 
+static constexpr int ik_fontCharHorPadding = 32;
+
 struct FontPackingInfo
 {
     const char *filePathEnd;
     int ptSize;
 };
 
-const FontPackingInfo ik_fontPackingInfos[] = {
+static constexpr FontPackingInfo ik_fontPackingInfos[] = {
     {"\\fonts\\eb_garamond.ttf", 18},
     {"\\fonts\\eb_garamond.ttf", 24},
     {"\\fonts\\eb_garamond.ttf", 36},
@@ -31,7 +33,7 @@ static inline int get_line_height(const FT_Face ftFace)
     return ftFace->size->metrics.height >> 6;
 }
 
-static int calc_largest_bitmap_width(const FT_Face ftFace, const FT_Library ftLib)
+static int calc_largest_char_width(const FT_Face ftFace, const FT_Library ftLib)
 {
     int width = 0;
 
@@ -51,12 +53,12 @@ static int calc_largest_bitmap_width(const FT_Face ftFace, const FT_Library ftLi
 
 static cc::Vec2DInt calc_font_tex_size(const FT_Face ftFace, const FT_Library ftLib)
 {
-    const int largestGlyphBitmapWidth = calc_largest_bitmap_width(ftFace, ftLib);
-    const int idealTexWidth = largestGlyphBitmapWidth * cc::gk_fontCharRangeSize;
+    const int largestCharWidth = calc_largest_char_width(ftFace, ftLib);
+    const int idealTexWidth = ik_fontCharHorPadding + ((largestCharWidth + ik_fontCharHorPadding) * cc::gk_fontCharRangeSize);
 
     return {
         std::min(idealTexWidth, cc::gk_texSizeLimit.x),
-        get_line_height(ftFace) * ((idealTexWidth / cc::gk_texSizeLimit.x) + 1)
+        get_line_height(ftFace) * static_cast<int>(ceilf(static_cast<float>(idealTexWidth) / cc::gk_texSizeLimit.x))
     };
 }
 
@@ -97,7 +99,7 @@ static bool init_font_display_info_and_tex_pixels(FontDisplayInfoWithTexPixels *
     }
 
     // Get and store information for all font characters.
-    int charDrawX = 0;
+    int charDrawX = ik_fontCharHorPadding;
     int charDrawY = 0;
 
     for (int i = 0; i < cc::gk_fontCharRangeSize; i++)
@@ -107,9 +109,9 @@ static bool init_font_display_info_and_tex_pixels(FontDisplayInfoWithTexPixels *
         FT_Load_Glyph(ftFace, ftCharIndex, FT_LOAD_DEFAULT);
         FT_Render_Glyph(ftFace->glyph, FT_RENDER_MODE_NORMAL);
 
-        if (charDrawX + ftFace->glyph->bitmap.width > cc::gk_texSizeLimit.x)
+        if (charDrawX + ftFace->glyph->bitmap.width + ik_fontCharHorPadding > cc::gk_texSizeLimit.x)
         {
-            charDrawX = 0;
+            charDrawX = ik_fontCharHorPadding;
             charDrawY += infoWithPixels->info.lineHeight;
         }
 
@@ -150,7 +152,7 @@ static bool init_font_display_info_and_tex_pixels(FontDisplayInfoWithTexPixels *
             }
         }
 
-        charDrawX += infoWithPixels->info.chars.srcRects[i].width;
+        charDrawX += infoWithPixels->info.chars.srcRects[i].width + ik_fontCharHorPadding;
     }
 
     FT_Done_Face(ftFace);

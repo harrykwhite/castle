@@ -3,24 +3,76 @@
 #include <numeric>
 #include "c_game.h"
 
-static inline int get_tex_unit_limit()
+static inline TexUnit get_tex_unit_limit()
 {
     int limit;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &limit);
     return std::min(limit, gk_texUnitLimitCap);
 }
 
-static int find_sprite_batch_tex_unit_to_use(const RenderLayer &renderLayer, const int batchIndex, const AssetID texID)
+static void init_render_layer(RenderLayer &layer, const RenderLayerInitInfo &initInfo)
 {
-    int freeTexUnit = -1;
+    assert(initInfo.spriteBatchCnt >= 0);
+    assert(initInfo.spriteBatchSlotCnt >= 0);
+    assert(initInfo.charBatchCnt >= 0);
+
+    // Initialise sprite batches.
+    layer.spriteBatches = cc::push_to_mem_arena<SpriteBatch>(g_permMemArena, initInfo.spriteBatchCnt);
+    layer.spriteBatchCnt = initInfo.spriteBatchCnt;
+    layer.spriteBatchSlotCnt = initInfo.spriteBatchSlotCnt;
+    layer.spriteBatchActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.spriteBatchCnt));
+
+    for (int i = 0; i < initInfo.spriteBatchCnt; ++i)
+    {
+        SpriteBatch &sb = layer.spriteBatches[i];
+        sb.quadBufVerts = cc::push_to_mem_arena<float>(g_permMemArena, gk_spriteBatchSlotVertsSize * initInfo.spriteBatchSlotCnt);
+        sb.slotActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.spriteBatchSlotCnt));
+        sb.slotTexUnits = cc::push_to_mem_arena<TexUnit>(g_permMemArena, initInfo.spriteBatchSlotCnt);
+        sb.texUnitInfos = cc::push_to_mem_arena<SpriteBatchTexUnitInfo>(g_permMemArena, get_tex_unit_limit());
+    }
+
+    // Initialise character batches.
+    layer.charBatches = cc::push_to_mem_arena<CharBatch>(g_permMemArena, initInfo.charBatchCnt);
+    layer.charBatchCnt = initInfo.charBatchCnt;
+    layer.charBatchActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.charBatchCnt));
+}
+
+static void clean_render_layer(RenderLayer &layer)
+{
+    for (int i = 0; i < layer.spriteBatchCnt; ++i)
+    {
+        if (!is_bit_active(layer.spriteBatchActivity, i))
+        {
+            continue;
+        }
+
+        clean_quad_buf(layer.spriteBatches[i].quadBufGLIDs);
+    }
+
+    for (int i = 0; i < layer.charBatchCnt; ++i)
+    {
+        if (!is_bit_active(layer.charBatchActivity, i))
+        {
+            continue;
+        }
+
+        clean_quad_buf(layer.charBatches[i].quadBufGLIDs);
+    }
+
+    layer = {};
+}
+
+static TexUnit find_sprite_batch_tex_unit_to_use(const RenderLayer &renderLayer, const int batchIndex, const AssetID texID)
+{
+    TexUnit freeTexUnit = -1;
 
     const int texUnitLimit = get_tex_unit_limit();
 
     for (int i = 0; i < texUnitLimit; ++i)
     {
-        const SpriteBatchTexUnitInfo &texUnit = renderLayer.spriteBatches.texUnitInfos[(batchIndex * texUnitLimit) + i];
+        const SpriteBatchTexUnitInfo &texUnitInfo = renderLayer.spriteBatches[batchIndex].texUnitInfos[i];
 
-        if (!texUnit.refCnt)
+        if (!texUnitInfo.refCnt)
         {
             if (freeTexUnit == -1)
             {
@@ -30,7 +82,7 @@ static int find_sprite_batch_tex_unit_to_use(const RenderLayer &renderLayer, con
             continue;
         }
 
-        if (texUnit.texID == texID)
+        if (texUnitInfo.texID == texID)
         {
             return i;
         }
@@ -45,20 +97,24 @@ static void activate_any_sprite_batch(Renderer &renderer, const int layerIndex)
 
     RenderLayer &layer = renderer.layers[layerIndex];
 
-    const int batchIndex = first_inactive_bit_index(layer.spriteBatchActivity);
-    assert(batchIndex != -1);
+    const int batchIndex = first_inactive_bit_index(layer.spriteBatchActivity, layer.spriteBatchCnt);
+
+    if (batchIndex == -1)
+    {
+        assert(false);
+        return;
+    }
 
     activate_bit(layer.spriteBatchActivity, batchIndex);
 
-    layer.spriteBatches.quadBufGLIDs[batchIndex] = make_quad_buf(layer.spriteBatchSlotCnt, true);
-    memset(layer.spriteBatches.slotTexUnits + (batchIndex * layer.spriteBatchSlotCnt), 0, layer.spriteBatchSlotCnt * sizeof(int));
-    memset(layer.spriteBatches.texUnitInfos + (batchIndex * get_tex_unit_limit()), 0, get_tex_unit_limit() * sizeof(SpriteBatchTexUnitInfo));
-    clear_bits(layer.spriteBatches.slotActivity[batchIndex]);
-}
+    SpriteBatch &batch = layer.spriteBatches[batchIndex];
 
-inline SpriteBatchTexUnitInfo RenderLayer::get_sprite_batch_tex_unit_info(const int batchIndex, const int texUnit) const
-{
-    return spriteBatches.texUnitInfos[(batchIndex * get_tex_unit_limit()) + texUnit];
+    batch.quadBufGLIDs = make_quad_buf(layer.spriteBatchSlotCnt, true);
+    memset(batch.quadBufVerts, 0, gk_spriteBatchSlotVertsSize * layer.spriteBatchSlotCnt * sizeof(float));
+    clear_bits(batch.slotActivity, layer.spriteBatchSlotCnt);
+    memset(batch.slotTexUnits, 0, layer.spriteBatchSlotCnt * sizeof(TexUnit));
+    batch.modifiedSlotRange = {};
+    memset(batch.texUnitInfos, 0, get_tex_unit_limit() * sizeof(SpriteBatchTexUnitInfo));
 }
 
 QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite)
@@ -155,18 +211,20 @@ void clean_quad_buf(QuadBufGLIDs &glIDs)
     glIDs = {};
 }
 
-void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerFactory layerFactory)
+void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory)
 {
-    assert(layerCnt > 0 && layerCnt <= gk_renderLayerLimit);
+    assert(layerCnt > 0);
     assert(camLayerCnt >= 0 && camLayerCnt <= layerCnt);
-    assert(layerFactory);
+    assert(layerInitInfoFactory);
 
     renderer.layerCnt = layerCnt;
     renderer.camLayerCnt = camLayerCnt;
 
+    renderer.layers = cc::push_to_mem_arena<RenderLayer>(g_permMemArena, layerCnt);
+
     for (int i = 0; i < layerCnt; ++i)
     {
-        renderer.layers[i] = make_render_layer(layerFactory(i));
+        init_render_layer(renderer.layers[i], layerInitInfoFactory(i));
     }
 }
 
@@ -180,7 +238,7 @@ void clean_renderer(Renderer &renderer)
     renderer = {};
 }
 
-void draw_render_layers(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam)
+void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam)
 {
     assert((renderer.camLayerCnt > 0) == (cam != nullptr));
 
@@ -213,16 +271,17 @@ void draw_render_layers(const Renderer &renderer, const Color &bgColor, const As
                 continue;
             }
 
+            const SpriteBatch &sb = layer.spriteBatches[i];
+
             // Bind texture GLIDs to units.
             for (int j = 0; j < texUnitLimit; ++j)
             {
-                const SpriteBatchTexUnitInfo &texUnit = layer.spriteBatches.texUnitInfos[(i * texUnitLimit) + j];
                 glActiveTexture(GL_TEXTURE0 + j);
-                glBindTexture(GL_TEXTURE_2D, texUnit.refCnt > 0 ? assetGroupManager.get_tex_gl_id(texUnit.texID) : 0);
+                glBindTexture(GL_TEXTURE_2D, sb.texUnitInfos[j].refCnt > 0 ? assetGroupManager.get_tex_gl_id(sb.texUnitInfos[j].texID) : 0);
             }
 
             // Draw the batch.
-            glBindVertexArray(layer.spriteBatches.quadBufGLIDs[i].vertArrayGLID);
+            glBindVertexArray(sb.quadBufGLIDs.vertArrayGLID);
             glDrawElements(GL_TRIANGLES, 6 * layer.spriteBatchSlotCnt, GL_UNSIGNED_SHORT, nullptr);
         }
 
@@ -239,19 +298,19 @@ void draw_render_layers(const Renderer &renderer, const Color &bgColor, const As
                 continue;
             }
 
-            const CharBatchDisplayProps &displayProps = layer.charBatches.displayProps[i];
+            CharBatch &cb = layer.charBatches[i];
 
-            glUniform2fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_pos"), 1, reinterpret_cast<const float *>(&displayProps.pos));
-            glUniform1f(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_rot"), displayProps.rot);
-            glUniform4fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_blend"), 1, reinterpret_cast<const float *>(&displayProps.blend));
+            glUniform2fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_pos"), 1, reinterpret_cast<const float *>(&cb.pos));
+            glUniform1f(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_rot"), cb.rot);
+            glUniform4fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_blend"), 1, reinterpret_cast<const float *>(&cb.blend));
 
             // Bind font texture GLID.
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, assetGroupManager.get_font_tex_gl_id(layer.charBatches.fontIDs[i]));
+            glBindTexture(GL_TEXTURE_2D, assetGroupManager.get_font_tex_gl_id(cb.fontID));
 
             // Draw the batch.
-            glBindVertexArray(layer.charBatches.quadBufGLIDs[i].vertArrayGLID);
-            glDrawElements(GL_TRIANGLES, 6 * layer.charBatches.slotCnts[i], GL_UNSIGNED_SHORT, nullptr);
+            glBindVertexArray(cb.quadBufGLIDs.vertArrayGLID);
+            glDrawElements(GL_TRIANGLES, 6 * cb.slotCnt, GL_UNSIGNED_SHORT, nullptr);
         }
     };
 
@@ -262,7 +321,8 @@ void draw_render_layers(const Renderer &renderer, const Color &bgColor, const As
 
         int i = 0;
 
-        do {
+        do
+        {
             renderLayer(renderer.layers[i], camViewMat);
             ++i;
         }
@@ -275,63 +335,6 @@ void draw_render_layers(const Renderer &renderer, const Color &bgColor, const As
     {
         renderLayer(renderer.layers[i], defaultViewMat);
     }
-}
-
-RenderLayer make_render_layer(const RenderLayerCreateInfo &createInfo)
-{
-    assert(createInfo.spriteBatchCnt > 0 && createInfo.spriteBatchCnt <= gk_renderLayerSpriteBatchLimit);
-    assert(createInfo.spriteBatchSlotCnt > 0 && createInfo.spriteBatchSlotCnt <= gk_spriteBatchSlotLimit);
-    assert(createInfo.charBatchCnt > 0 && createInfo.charBatchCnt <= gk_renderLayerCharBatchLimit);
-
-    RenderLayer layer = {
-        .spriteBatchCnt = createInfo.spriteBatchCnt,
-        .spriteBatchSlotCnt = createInfo.spriteBatchSlotCnt,
-        .charBatchCnt = createInfo.charBatchCnt
-    };
-
-    layer.spriteBatches.quadBufGLIDs = cc::push_to_mem_arena<QuadBufGLIDs>(g_permMemArena, createInfo.spriteBatchCnt);
-    layer.spriteBatches.slotTexUnits = cc::push_to_mem_arena<int>(g_permMemArena, createInfo.spriteBatchSlotCnt * createInfo.spriteBatchCnt);
-    layer.spriteBatches.texUnitInfos = cc::push_to_mem_arena<SpriteBatchTexUnitInfo>(g_permMemArena, get_tex_unit_limit() * createInfo.spriteBatchCnt);
-
-    for (int i = 0; i < createInfo.spriteBatchCnt; ++i)
-    {
-        init_heap_bitset(layer.spriteBatches.slotActivity[i], g_permMemArena, createInfo.spriteBatchSlotCnt);
-    }
-
-    layer.charBatches.slotCnts = cc::push_to_mem_arena<int>(g_permMemArena, createInfo.charBatchCnt);
-    layer.charBatches.quadBufGLIDs = cc::push_to_mem_arena<QuadBufGLIDs>(g_permMemArena, createInfo.charBatchCnt);
-    layer.charBatches.fontIDs = cc::push_to_mem_arena<AssetID>(g_permMemArena, createInfo.charBatchCnt);
-    layer.charBatches.displayProps = cc::push_to_mem_arena<CharBatchDisplayProps>(g_permMemArena, createInfo.charBatchCnt);
-
-    init_heap_bitset(layer.spriteBatchActivity, g_permMemArena, createInfo.spriteBatchCnt);
-    init_heap_bitset(layer.charBatchActivity, g_permMemArena, createInfo.charBatchCnt);
-
-    return layer;
-}
-
-void clean_render_layer(RenderLayer &layer)
-{
-    for (int i = 0; i < layer.spriteBatchCnt; ++i)
-    {
-        if (!is_bit_active(layer.spriteBatchActivity, i))
-        {
-            continue;
-        }
-
-        clean_quad_buf(layer.spriteBatches.quadBufGLIDs[i]);
-    }
-
-    for (int i = 0; i < layer.charBatchCnt; ++i)
-    {
-        if (!is_bit_active(layer.charBatchActivity, i))
-        {
-            continue;
-        }
-
-        clean_quad_buf(layer.charBatches.quadBufGLIDs[i]);
-    }
-
-    layer = {};
 }
 
 SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int layerIndex, const AssetID texID)
@@ -347,14 +350,16 @@ SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int laye
             continue;
         }
 
+        SpriteBatch &sb = layer.spriteBatches[i];
+
         // Continue if no slot is available.
-        if (are_all_bits_active(layer.spriteBatches.slotActivity[i]))
+        if (are_all_bits_active(sb.slotActivity, layer.spriteBatchSlotCnt))
         {
             continue;
         }
 
         // Find a texture unit to use, continue if none are suitable.
-        const int texUnit = find_sprite_batch_tex_unit_to_use(layer, i, texID);
+        const TexUnit texUnit = find_sprite_batch_tex_unit_to_use(layer, i, texID);
 
         if (texUnit == -1)
         {
@@ -362,15 +367,15 @@ SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int laye
         }
 
         // Use the first inactive slot.
-        const int slotIndex = first_inactive_bit_index(layer.spriteBatches.slotActivity[i]);
-        activate_bit(layer.spriteBatches.slotActivity[i], slotIndex);
+        const int slotIndex = first_inactive_bit_index(sb.slotActivity, layer.spriteBatchSlotCnt);
+        activate_bit(sb.slotActivity, slotIndex);
 
         // Update texture unit information.
-        SpriteBatchTexUnitInfo &texUnitInfo = layer.spriteBatches.texUnitInfos[(i * get_tex_unit_limit()) + texUnit];
+        SpriteBatchTexUnitInfo &texUnitInfo = sb.texUnitInfos[texUnit];
         texUnitInfo.texID = texID;
         ++texUnitInfo.refCnt;
 
-        layer.spriteBatches.slotTexUnits[(i * layer.spriteBatchSlotCnt) + slotIndex] = texUnit;
+        sb.slotTexUnits[slotIndex] = texUnit;
 
         return {
             .layerIndex = layerIndex,
@@ -381,121 +386,153 @@ SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int laye
 
     // Failed to find a batch to use in the layer, so activate a new one and try this all again.
     activate_any_sprite_batch(renderer, layerIndex);
-    return take_any_sprite_batch_slot(renderer, layerIndex, texID); // TEMP: Way more work is done here than necessary.
+    return take_any_sprite_batch_slot(renderer, layerIndex, texID); // FIXME: Way more work is done here than necessary.
 }
 
 void release_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key)
 {
     RenderLayer &layer = renderer.layers[key.layerIndex];
+    SpriteBatch &batch = layer.spriteBatches[key.batchIndex];
 
     // Mark the slot as inactive.
-    deactivate_bit(layer.spriteBatches.slotActivity[key.batchIndex], key.slotIndex);
+    deactivate_bit(batch.slotActivity, layer.spriteBatchSlotCnt);
 
     // Update texture unit information.
-    const int texUnit = layer.spriteBatches.slotTexUnits[(key.batchIndex * layer.spriteBatchSlotCnt) + key.slotIndex];
-    SpriteBatchTexUnitInfo &texUnitInfo = layer.spriteBatches.texUnitInfos[(key.batchIndex * get_tex_unit_limit()) + texUnit];
-    --texUnitInfo.refCnt;
+    const TexUnit texUnit = batch.slotTexUnits[key.slotIndex];
+    --batch.texUnitInfos[texUnit].refCnt;
 
     // Clear the slot render data.
     clear_sprite_batch_slot(renderer, key);
 }
 
-void write_to_sprite_batch_slot(const Renderer &renderer, const SpriteBatchSlotKey &key, const SpriteBatchSlotWriteData &writeData, const AssetGroupManager &assetGroupManager)
+void write_to_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key, const SpriteBatchSlotWriteData &writeData, const AssetGroupManager &assetGroupManager)
 {
-    const RenderLayer &layer = renderer.layers[key.layerIndex];
+    RenderLayer &layer = renderer.layers[key.layerIndex];
+    SpriteBatch &batch = layer.spriteBatches[key.batchIndex];
+    const int texUnit = batch.slotTexUnits[key.slotIndex];
+    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(batch.texUnitInfos[texUnit].texID);
 
-    const int texUnit = layer.get_sprite_batch_slot_tex_unit(key.batchIndex, key.slotIndex);
-    const SpriteBatchTexUnitInfo &texUnitInfo = layer.get_sprite_batch_tex_unit_info(key.batchIndex, texUnit);
-    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(texUnitInfo.texID);
+    float *const verts = batch.quadBufVerts + (key.slotIndex * gk_spriteBatchSlotVertsSize);
 
-    const float verts[gk_spriteQuadShaderProgVertCnt * 4] = {
-        (0.0f - writeData.origin.x) * writeData.scale.x,
-        (0.0f - writeData.origin.y) * writeData.scale.y,
-        writeData.pos.x,
-        writeData.pos.y,
-        static_cast<float>(writeData.srcRect.width),
-        static_cast<float>(writeData.srcRect.height),
-        writeData.rot,
-        static_cast<float>(texUnit),
-        static_cast<float>(writeData.srcRect.x) / texSize.x,
-        static_cast<float>(writeData.srcRect.y) / texSize.y,
-        writeData.alpha,
+    verts[0] = (0.0f - writeData.origin.x) * writeData.scale.x;
+    verts[1] = (0.0f - writeData.origin.y) * writeData.scale.y;
+    verts[2] = writeData.pos.x;
+    verts[3] = writeData.pos.y;
+    verts[4] = static_cast<float>(writeData.srcRect.width);
+    verts[5] = static_cast<float>(writeData.srcRect.height);
+    verts[6] = writeData.rot;
+    verts[7] = static_cast<float>(texUnit);
+    verts[8] = static_cast<float>(writeData.srcRect.x) / texSize.x;
+    verts[9] = static_cast<float>(writeData.srcRect.y) / texSize.y;
+    verts[10] = writeData.alpha;
 
-        (1.0f - writeData.origin.x) * writeData.scale.x,
-        (0.0f - writeData.origin.y) * writeData.scale.y,
-        writeData.pos.x,
-        writeData.pos.y,
-        static_cast<float>(writeData.srcRect.width),
-        static_cast<float>(writeData.srcRect.height),
-        writeData.rot,
-        static_cast<float>(texUnit),
-        static_cast<float>(writeData.srcRect.x + writeData.srcRect.width) / texSize.x,
-        static_cast<float>(writeData.srcRect.y) / texSize.y,
-        writeData.alpha,
+    verts[11] = (1.0f - writeData.origin.x) * writeData.scale.x;
+    verts[12] = (0.0f - writeData.origin.y) * writeData.scale.y;
+    verts[13] = writeData.pos.x;
+    verts[14] = writeData.pos.y;
+    verts[15] = static_cast<float>(writeData.srcRect.width);
+    verts[16] = static_cast<float>(writeData.srcRect.height);
+    verts[17] = writeData.rot;
+    verts[18] = static_cast<float>(texUnit);
+    verts[19] = static_cast<float>(writeData.srcRect.x + writeData.srcRect.width) / texSize.x;
+    verts[20] = static_cast<float>(writeData.srcRect.y) / texSize.y;
+    verts[21] = writeData.alpha;
 
-        (1.0f - writeData.origin.x) * writeData.scale.x,
-        (1.0f - writeData.origin.y) * writeData.scale.y,
-        writeData.pos.x,
-        writeData.pos.y,
-        static_cast<float>(writeData.srcRect.width),
-        static_cast<float>(writeData.srcRect.height),
-        writeData.rot,
-        static_cast<float>(texUnit),
-        static_cast<float>(writeData.srcRect.x + writeData.srcRect.width) / texSize.x,
-        static_cast<float>(writeData.srcRect.y + writeData.srcRect.height) / texSize.y,
-        writeData.alpha,
+    verts[22] = (1.0f - writeData.origin.x) * writeData.scale.x;
+    verts[23] = (1.0f - writeData.origin.y) * writeData.scale.y;
+    verts[24] = writeData.pos.x;
+    verts[25] = writeData.pos.y;
+    verts[26] = static_cast<float>(writeData.srcRect.width);
+    verts[27] = static_cast<float>(writeData.srcRect.height);
+    verts[28] = writeData.rot;
+    verts[29] = static_cast<float>(texUnit);
+    verts[30] = static_cast<float>(writeData.srcRect.x + writeData.srcRect.width) / texSize.x;
+    verts[31] = static_cast<float>(writeData.srcRect.y + writeData.srcRect.height) / texSize.y;
+    verts[32] = writeData.alpha;
 
-        (0.0f - writeData.origin.x) * writeData.scale.x,
-        (1.0f - writeData.origin.y) * writeData.scale.y,
-        writeData.pos.x,
-        writeData.pos.y,
-        static_cast<float>(writeData.srcRect.width),
-        static_cast<float>(writeData.srcRect.height),
-        writeData.rot,
-        static_cast<float>(texUnit),
-        static_cast<float>(writeData.srcRect.x) / texSize.x,
-        static_cast<float>(writeData.srcRect.y + writeData.srcRect.height) / texSize.y,
-        writeData.alpha
-    };
+    verts[33] = (0.0f - writeData.origin.x) * writeData.scale.x;
+    verts[34] = (1.0f - writeData.origin.y) * writeData.scale.y;
+    verts[35] = writeData.pos.x;
+    verts[36] = writeData.pos.y;
+    verts[37] = static_cast<float>(writeData.srcRect.width);
+    verts[38] = static_cast<float>(writeData.srcRect.height);
+    verts[39] = writeData.rot;
+    verts[40] = static_cast<float>(texUnit);
+    verts[41] = static_cast<float>(writeData.srcRect.x) / texSize.x;
+    verts[42] = static_cast<float>(writeData.srcRect.y + writeData.srcRect.height) / texSize.y;
+    verts[43] = writeData.alpha;
 
-    QuadBufGLIDs &quadBufGLIDs = renderer.layers[key.layerIndex].spriteBatches.quadBufGLIDs[key.batchIndex];
-
-    glBindVertexArray(quadBufGLIDs.vertArrayGLID);
-    glBindBuffer(GL_ARRAY_BUFFER, quadBufGLIDs.vertBufGLID);
-    glBufferSubData(GL_ARRAY_BUFFER, key.slotIndex * sizeof(verts), sizeof(verts), verts);
+    batch.modifiedSlotRange.begin = std::min(batch.modifiedSlotRange.begin, key.slotIndex);
+    batch.modifiedSlotRange.end = std::max(batch.modifiedSlotRange.end, key.slotIndex + 1);
 }
 
 void clear_sprite_batch_slot(const Renderer &renderer, const SpriteBatchSlotKey &key)
 {
-    QuadBufGLIDs &quadBufGLIDs = renderer.layers[key.layerIndex].spriteBatches.quadBufGLIDs[key.batchIndex];
+    const RenderLayer &layer = renderer.layers[key.layerIndex];
+    const SpriteBatch &batch = layer.spriteBatches[key.batchIndex];
 
-    glBindVertexArray(quadBufGLIDs.vertArrayGLID);
-    glBindBuffer(GL_ARRAY_BUFFER, quadBufGLIDs.vertBufGLID);
+    glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
+    glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
 
-    const float verts[gk_spriteQuadShaderProgVertCnt * 4] = {};
+    const float verts[gk_spriteBatchSlotVertsSize] = {};
     glBufferSubData(GL_ARRAY_BUFFER, key.slotIndex * sizeof(verts), sizeof(verts), verts);
 }
 
-CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, const int slotCnt, const AssetID fontID, const AssetGroupManager &assetGroupManager)
+void submit_sprite_batch_slots(Renderer &renderer)
+{
+    for (int i = 0; i < renderer.layerCnt; ++i)
+    {
+        const RenderLayer &layer = renderer.layers[i];
+
+        for (int j = 0; j < layer.spriteBatchCnt; ++j)
+        {
+            SpriteBatch &batch = layer.spriteBatches[j];
+
+            if (!is_bit_active(layer.spriteBatchActivity, j))
+            {
+                continue;
+            }
+
+            if (batch.modifiedSlotRange.end - batch.modifiedSlotRange.begin == 0)
+            {
+                // No slots have been modified, so no need to write.
+                continue;
+            }
+
+            // Submit the modified range of vertex data.
+            glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
+            glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
+
+            const int offs = (gk_spriteBatchSlotVertsSize) * batch.modifiedSlotRange.begin * sizeof(float);
+            const int size = (gk_spriteBatchSlotVertsSize) * (batch.modifiedSlotRange.end - batch.modifiedSlotRange.begin) * sizeof(float);
+            glBufferSubData(GL_ARRAY_BUFFER, offs, size, batch.quadBufVerts);
+
+            // Reset the modified slot range for next time.
+            batch.modifiedSlotRange = {};
+        }
+    }
+}
+
+CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, const int slotCnt, const AssetID fontID, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager)
 {
     assert(layerIndex >= 0 && layerIndex < renderer.layerCnt);
-    assert(slotCnt > 0 && slotCnt <= gk_charBatchSlotLimit);
+    assert(slotCnt > 0);
 
     RenderLayer &layer = renderer.layers[layerIndex];
 
-    const int batchIndex = first_inactive_bit_index(layer.charBatchActivity);
+    const int batchIndex = first_inactive_bit_index(layer.charBatchActivity, layer.charBatchCnt);
     assert(batchIndex != -1);
 
     activate_bit(layer.charBatchActivity, batchIndex);
 
-    layer.charBatches.slotCnts[batchIndex] = slotCnt;
-    layer.charBatches.quadBufGLIDs[batchIndex] = make_quad_buf(slotCnt, false);
-    layer.charBatches.fontIDs[batchIndex] = fontID;
-    layer.charBatches.displayProps[batchIndex] = {
-        .pos = {},
-        .rot = 0.0f,
-        .blend = Color::make_white()
-    };
+    CharBatch &batch = layer.charBatches[batchIndex];
+
+    batch.quadBufGLIDs = make_quad_buf(slotCnt, false);
+    batch.slotCnt = slotCnt;
+    batch.fontID = fontID;
+    batch.pos = pos;
+    batch.rot = 0.0f;
+    batch.blend = Color::make_white();
 
     return {
         .layerIndex = layerIndex,
@@ -513,18 +550,18 @@ void deactivate_char_batch(Renderer &renderer, const CharBatchKey &key)
 void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char *const text, const FontHorAlign horAlign, const FontVerAlign verAlign, const AssetGroupManager &assetGroupManager)
 {
     RenderLayer &layer = renderer.layers[key.layerIndex];
-    const int slotCnt = layer.charBatches.slotCnts[key.batchIndex];
+    CharBatch &batch = layer.charBatches[key.batchIndex];
 
     const int textLen = strlen(text);
-    assert(textLen > 0 && textLen <= slotCnt);
+    assert(textLen > 0 && textLen <= batch.slotCnt);
 
-    const cc::FontDisplayInfo &fontDisplayInfo = assetGroupManager.get_font_display_info(layer.charBatches.fontIDs[key.batchIndex]);
+    const cc::FontDisplayInfo &fontDisplayInfo = assetGroupManager.get_font_display_info(batch.fontID);
 
     // Determine the positions of text characters based on font information, alongside the overall dimensions of the text to be used when applying alignment.
-    const auto charDrawPositions = cc::push_to_mem_arena<cc::Vec2D>(g_tempMemArena, slotCnt);
+    const auto charDrawPositions = cc::push_to_mem_arena<cc::Vec2D>(g_tempMemArena, batch.slotCnt);
     cc::Vec2D charDrawPosPen = {};
 
-    const auto textLineWidths = cc::push_to_mem_arena<int>(g_tempMemArena, slotCnt + 1);
+    const auto textLineWidths = cc::push_to_mem_arena<int>(g_tempMemArena, batch.slotCnt + 1);
     int textFirstLineMinOffs = 0;
     bool textFirstLineMinOffsUpdated = false;
     int textLastLineMaxHeight = 0;
@@ -605,12 +642,11 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
     // Clear the batch so it can have only the new characters.
     clear_char_batch(renderer, key);
 
-    // Bind the vertex array and buffer.
-    const QuadBufGLIDs &quadBufGLIDs = layer.charBatches.quadBufGLIDs[key.batchIndex];
-    glBindVertexArray(quadBufGLIDs.vertArrayGLID);
-    glBindBuffer(GL_ARRAY_BUFFER, quadBufGLIDs.vertBufGLID);
+    // Reserve memory to hold the vertex data for the characters.
+    const int vertsLen = gk_charBatchSlotVertsSize * textLen;
+    float *const verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
 
-    // Write character render data.
+    // Write the vertex data.
     for (int i = 0; i < textLen; i++)
     {
         if (text[i] == '\n')
@@ -631,47 +667,54 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
             charDrawPositions[i].y - (textHeight * verAlign * 0.5f)
         };
 
-        const cc::RectFloat charTexCoordsRect = {
+        const cc::Vec2D charTexCoordsTopLeft = {
             static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].x) / fontDisplayInfo.texSize.x,
-            static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].y) / fontDisplayInfo.texSize.y,
-            static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].width) / fontDisplayInfo.texSize.x,
-            static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].height) / fontDisplayInfo.texSize.y
+            static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].y) / fontDisplayInfo.texSize.y
         };
 
-        const float verts[gk_charQuadShaderProgVertCnt * 4] = {
-            charDrawPos.x,
-            charDrawPos.y,
-            charTexCoordsRect.x,
-            charTexCoordsRect.y,
-
-            charDrawPos.x + fontDisplayInfo.chars.srcRects[charIndex].width,
-            charDrawPos.y,
-            charTexCoordsRect.x + charTexCoordsRect.width,
-            charTexCoordsRect.y,
-
-            charDrawPos.x + fontDisplayInfo.chars.srcRects[charIndex].width,
-            charDrawPos.y + fontDisplayInfo.chars.srcRects[charIndex].height,
-            charTexCoordsRect.x + charTexCoordsRect.width,
-            charTexCoordsRect.y + charTexCoordsRect.height,
-
-            charDrawPos.x,
-            charDrawPos.y + fontDisplayInfo.chars.srcRects[charIndex].height,
-            charTexCoordsRect.x,
-            charTexCoordsRect.y + charTexCoordsRect.height
+        const cc::Vec2D charTexCoordsBottomRight = {
+            static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].right() + 1.0f) / fontDisplayInfo.texSize.x, // FIXME: The +1.0f is a hack to fix the text being cut off. Still need to figure out why it's actually happening.
+            static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].bottom()) / fontDisplayInfo.texSize.y
         };
 
-        glBufferSubData(GL_ARRAY_BUFFER, i * sizeof(verts), sizeof(verts), verts);
+        float *const slotVerts = verts + (i * gk_charBatchSlotVertsSize);
+
+        slotVerts[0] = charDrawPos.x;
+        slotVerts[1] = charDrawPos.y;
+        slotVerts[2] = charTexCoordsTopLeft.x;
+        slotVerts[3] = charTexCoordsTopLeft.y;
+
+        slotVerts[4] = charDrawPos.x + fontDisplayInfo.chars.srcRects[charIndex].width + 1;
+        slotVerts[5] = charDrawPos.y;
+        slotVerts[6] = charTexCoordsBottomRight.x;
+        slotVerts[7] = charTexCoordsTopLeft.y;
+
+        slotVerts[8] = charDrawPos.x + fontDisplayInfo.chars.srcRects[charIndex].width + 1;
+        slotVerts[9] = charDrawPos.y + fontDisplayInfo.chars.srcRects[charIndex].height;
+        slotVerts[10] = charTexCoordsBottomRight.x;
+        slotVerts[11] = charTexCoordsBottomRight.y;
+
+        slotVerts[12] = charDrawPos.x;
+        slotVerts[13] = charDrawPos.y + fontDisplayInfo.chars.srcRects[charIndex].height;
+        slotVerts[14] = charTexCoordsTopLeft.x;
+        slotVerts[15] = charTexCoordsBottomRight.y;
     }
+
+    // Submit the vertex data.
+    glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
+    glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertsLen * sizeof(float), verts);
 }
 
 void clear_char_batch(const Renderer &renderer, const CharBatchKey &key)
 {
     const RenderLayer &layer = renderer.layers[key.layerIndex];
-    const QuadBufGLIDs &quadBufGLIDs = layer.charBatches.quadBufGLIDs[key.batchIndex];
+    const CharBatch &batch = layer.charBatches[key.batchIndex];
 
-    glBindVertexArray(quadBufGLIDs.vertArrayGLID);
-    glBindBuffer(GL_ARRAY_BUFFER, quadBufGLIDs.vertBufGLID);
+    glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
+    glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
 
-    const float verts[(gk_charQuadShaderProgVertCnt * 4) * gk_renderLayerCharBatchLimit] = {};
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_DYNAMIC_DRAW);
+    const int vertsLen = (gk_charBatchSlotVertsSize) * batch.slotCnt;
+    const float *const verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
+    glBufferData(GL_ARRAY_BUFFER, vertsLen * sizeof(float), verts, GL_DYNAMIC_DRAW);
 }

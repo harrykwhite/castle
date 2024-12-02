@@ -44,7 +44,7 @@ struct World
     PlayerEnt playerEnt;
 
     EnemyEnt enemyEnts[gk_enemyEntLimit];
-    Bitset<gk_enemyEntLimit> enemyEntActivity;
+    StaticBitset<gk_enemyEntLimit> enemyEntActivity;
 
     SpriteBatchSlotKey cursorSBSlotKey;
 };

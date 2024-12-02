@@ -1,6 +1,6 @@
 #include "c_world.h"
 
-static RenderLayerCreateInfo render_layer_factory(const int index)
+static RenderLayerInitInfo render_layer_factory(const int index)
 {
     switch (index)
     {

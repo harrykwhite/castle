@@ -57,6 +57,8 @@ GameCleanupInfoBitset init_game(Game &game)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, false); // Show the window later once other things have been set up.
 
+    // TODO: Set minimum window size.
+
     game.glfwWindow = glfwCreateWindow(ik_windowSize.x, ik_windowSize.y, gk_windowTitle, nullptr, nullptr); // TEMP: Initial window size will be determined dynamically later.
 
     if (!game.glfwWindow)
@@ -157,8 +159,13 @@ void run_game_loop(Game &game)
 
         if (ik_windowSize != windowSizeBeforePoll)
         {
-            // A change in window size has been detected; resize the viewport.
+            // A change in window size has been detected.
             glViewport(0, 0, ik_windowSize.x, ik_windowSize.y);
+
+            if (!game.inWorld)
+            {
+                main_menu_on_window_resize(game.mainMenu);
+            }
         }
 
         const double frameTimeLast = frameTime;
@@ -198,6 +205,7 @@ void run_game_loop(Game &game)
 
                     if (goToWorld)
                     {
+                        cc::log("Going to world...");
                         clean_main_menu(game.mainMenu);
                         game.inWorld = true;
                         init_world(game.world, game.assetGroupManager);
@@ -213,11 +221,13 @@ void run_game_loop(Game &game)
         // Render.
         if (game.inWorld)
         {
-            draw_render_layers(game.world.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam);
+            submit_sprite_batch_slots(game.world.renderer);
+            render(game.world.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam);
         }
         else
         {
-            draw_render_layers(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr);
+            submit_sprite_batch_slots(game.mainMenu.renderer);
+            render(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr);
         }
 
         glfwSwapBuffers(game.glfwWindow);

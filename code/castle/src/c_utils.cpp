@@ -4,7 +4,7 @@ bool are_all_bits_active(const cc::Byte *const bytes, const int bitCnt)
 {
     assert(bitCnt > 0);
 
-    const int byteCnt = bit_to_byte_cnt(bitCnt);
+    const int byteCnt = bits_to_bytes(bitCnt);
 
     for (int i = 0; i < byteCnt - 1; ++i)
     {
@@ -44,7 +44,7 @@ int first_active_bit_index(const cc::Byte *const bytes, const int bitCnt)
         }
     }
 
-    const int byteCnt = bit_to_byte_cnt(bitCnt);
+    const int byteCnt = bits_to_bytes(bitCnt);
 
     for (int i = 0; i < bitCnt % 8; ++i)
     {
@@ -77,7 +77,7 @@ int first_inactive_bit_index(const cc::Byte *const bytes, const int bitCnt)
         }
     }
 
-    const int byteCnt = bit_to_byte_cnt(bitCnt);
+    const int byteCnt = bits_to_bytes(bitCnt);
 
     for (int i = 0; i < bitCnt % 8; ++i)
     {

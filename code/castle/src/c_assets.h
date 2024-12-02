@@ -126,7 +126,7 @@ public:
 private:
     AssetGroup *m_groups;
     int m_groupVersions[k_groupLimit];
-    Bitset<k_groupLimit> m_groupActivity;
+    StaticBitset<k_groupLimit> m_groupActivity;
 
     bool init_vanilla_group();
     void clean_asset_group(const int index);

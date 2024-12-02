@@ -26,7 +26,7 @@ private:
 
     ALID m_alIDs[k_srcLimit];
     int m_versions[k_srcLimit];
-    Bitset<k_srcLimit> m_autoReleases; // Indicates which sources need to be automatically released when finished (due to not them not being referenced).
+    StaticBitset<k_srcLimit> m_autoReleases; // Indicates which sources need to be automatically released when finished (due to not them not being referenced).
 
     void release_src_by_index(const int index);
 };
@@ -65,7 +65,7 @@ private:
     static constexpr int k_srcLimit = 16;
 
     MusicSrc m_srcs[k_srcLimit];
-    Bitset<k_srcLimit> m_activity;
+    StaticBitset<k_srcLimit> m_activity;
     int m_versions[k_srcLimit];
 
     void clean_active_src(const int index);

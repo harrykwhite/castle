@@ -7,11 +7,10 @@
 
 constexpr int gk_texUnitLimitCap = 32;
 
-constexpr int gk_renderLayerLimit = 16;
-constexpr int gk_renderLayerSpriteBatchLimit = 10;
-constexpr int gk_renderLayerCharBatchLimit = 24;
-constexpr int gk_spriteBatchSlotLimit = 1024;
-constexpr int gk_charBatchSlotLimit = 1024;
+constexpr int gk_spriteBatchSlotVertsSize = gk_spriteQuadShaderProgVertCnt * 4;
+constexpr int gk_charBatchSlotVertsSize = gk_charQuadShaderProgVertCnt * 4;
+
+using TexUnit = char;
 
 enum FontHorAlign
 {
@@ -51,7 +50,19 @@ struct QuadBufGLIDs
 struct SpriteBatchTexUnitInfo
 {
     AssetID texID;
-    int refCnt;
+    int refCnt; // The number of slots in the batch using this texture unit.
+};
+
+struct SpriteBatch
+{
+    QuadBufGLIDs quadBufGLIDs;
+    float *quadBufVerts; // The vertex data of the batch. The modified range of this buffer is submitted at the end of each frame in a single call.
+
+    cc::Byte *slotActivity;
+    TexUnit *slotTexUnits;
+    cc::Range modifiedSlotRange;
+
+    SpriteBatchTexUnitInfo *texUnitInfos;
 };
 
 struct SpriteBatchSlotKey
@@ -83,18 +94,14 @@ struct SpriteBatchSlotWriteData
     }
 };
 
-struct SpriteBatches
+struct CharBatch
 {
-    QuadBufGLIDs *quadBufGLIDs;
+    QuadBufGLIDs quadBufGLIDs;
 
-    int *slotTexUnits;
-    SpriteBatchTexUnitInfo *texUnitInfos;
+    int slotCnt;
 
-    HeapBitset slotActivity[gk_renderLayerSpriteBatchLimit];
-};
+    AssetID fontID;
 
-struct CharBatchDisplayProps
-{
     cc::Vec2D pos;
     float rot;
     Color blend;
@@ -106,89 +113,53 @@ struct CharBatchKey
     int batchIndex;
 };
 
-struct CharBatches
-{
-    int *slotCnts;
-    QuadBufGLIDs *quadBufGLIDs;
-    AssetID *fontIDs;
-    CharBatchDisplayProps *displayProps;
-};
-
 // A render layer is fundamentally a set of sprite batches and character batches.
-// The implication of drawing many things on the same layer is that you don't care about the order in which those things are drawn.
+// The implication of drawing things on the same layer is that you don't care about the order in which those things are drawn.
+// Note however that the character batches in a layer are always drawn after (and therefore in front of) the sprite batches.
 struct RenderLayer
 {
+    SpriteBatch *spriteBatches;
     int spriteBatchCnt;
     int spriteBatchSlotCnt; // All sprite batches in the same layer have the same slot count.
+    cc::Byte *spriteBatchActivity;
 
+    CharBatch *charBatches;
     int charBatchCnt;
-
-    SpriteBatches spriteBatches;
-    CharBatches charBatches;
-
-    HeapBitset spriteBatchActivity;
-    HeapBitset charBatchActivity;
-
-    inline SpriteBatchTexUnitInfo get_sprite_batch_tex_unit_info(const int batchIndex, const int texUnit) const;
-
-    inline int get_sprite_batch_slot_tex_unit(const int batchIndex, const int slotIndex) const
-    {
-        return spriteBatches.slotTexUnits[(batchIndex * spriteBatchSlotCnt) + slotIndex];
-    }
+    cc::Byte *charBatchActivity;
 };
 
-struct RenderLayerCreateInfo
+struct RenderLayerInitInfo
 {
     int spriteBatchCnt;
     int spriteBatchSlotCnt;
     int charBatchCnt;
 };
 
-using RenderLayerFactory = RenderLayerCreateInfo(*)(const int index);
+using RenderLayerInitInfoFactory = RenderLayerInitInfo (*)(const int index);
 
 struct Renderer
 {
     int layerCnt;
     int camLayerCnt; // Layers 0 through to this number exclusive are drawn with a camera view matrix.
 
-    RenderLayer layers[gk_renderLayerLimit];
+    RenderLayer *layers;
 };
 
 QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite);
 void clean_quad_buf(QuadBufGLIDs &glIDs);
 
-RenderLayer make_render_layer(const RenderLayerCreateInfo &createInfo);
-void clean_render_layer(RenderLayer &layer);
-
-void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerFactory layerFactory);
+void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory);
 void clean_renderer(Renderer &renderer);
 
-void draw_render_layers(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam);
-
-RenderLayer make_render_layer(const RenderLayerCreateInfo &createInfo);
-void clean_render_layer(RenderLayer &layer);
+void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam);
 
 SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int layerIndex, const AssetID texID);
 void release_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key);
-void write_to_sprite_batch_slot(const Renderer &renderer, const SpriteBatchSlotKey &key, const SpriteBatchSlotWriteData &writeData, const AssetGroupManager &assetGroupManager);
+void write_to_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key, const SpriteBatchSlotWriteData &writeData, const AssetGroupManager &assetGroupManager);
 void clear_sprite_batch_slot(const Renderer &renderer, const SpriteBatchSlotKey &key);
+void submit_sprite_batch_slots(Renderer &renderer);
 
-CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, const int slotCnt, const AssetID fontID, const AssetGroupManager &assetGroupManager);
+CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, const int slotCnt, const AssetID fontID, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager);
 void deactivate_char_batch(Renderer &renderer, const CharBatchKey &key);
 void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char *const text, const FontHorAlign horAlign, const FontVerAlign verAlign, const AssetGroupManager &assetGroupManager);
 void clear_char_batch(const Renderer &renderer, const CharBatchKey &key);
-
-inline void set_char_batch_pos(Renderer &renderer, const CharBatchKey &key, const cc::Vec2D pos)
-{
-    renderer.layers[key.layerIndex].charBatches.displayProps[key.batchIndex].pos = pos;
-}
-
-inline void set_char_batch_rot(Renderer &renderer, const CharBatchKey &key, const float rot)
-{
-    renderer.layers[key.layerIndex].charBatches.displayProps[key.batchIndex].rot = rot;
-}
-
-inline void set_char_batch_blend(Renderer &renderer, const CharBatchKey &key, const Color &blend)
-{
-    renderer.layers[key.layerIndex].charBatches.displayProps[key.batchIndex].blend = blend;
-}

@@ -49,7 +49,7 @@ struct Game
     ALCdevice *alDevice;
     ALCcontext *alContext;
 
-    Bitset<k_modLimit> modActivityBits;
+    StaticBitset<k_modLimit> modActivityBits;
 
     AssetGroupManager assetGroupManager;
     ShaderProgGLIDs shaderProgGLIDs;
