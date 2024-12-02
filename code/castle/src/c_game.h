@@ -52,7 +52,7 @@ struct Game
     StaticBitset<k_modLimit> modActivityBits;
 
     AssetGroupManager assetGroupManager;
-    ShaderProgGLIDs shaderProgGLIDs;
+    ShaderProgs shaderProgs;
 
     InputManager inputManager;
     int glfwCallbackMouseScroll; // An axis representing the scroll wheel movement, updated by the GLFW scroll callback and reset after a new input state is generated.

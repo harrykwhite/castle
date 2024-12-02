@@ -12,6 +12,8 @@ constexpr int gk_charBatchSlotVertsSize = gk_charQuadShaderProgVertCnt * 4;
 
 using TexUnit = char;
 
+extern TexUnit g_texUnitLimit;
+
 enum FontHorAlign
 {
     FONT_HOR_ALIGN_LEFT,
@@ -145,13 +147,15 @@ struct Renderer
     RenderLayer *layers;
 };
 
+void init_tex_unit_limit();
+
 QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite);
 void clean_quad_buf(QuadBufGLIDs &glIDs);
 
 void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory);
 void clean_renderer(Renderer &renderer);
 
-void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam);
+void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgs &shaderProgs, const Camera *const cam);
 
 SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int layerIndex, const AssetID texID);
 void release_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key);

@@ -67,10 +67,19 @@ struct AssetGroup
     Music music;
 };
 
-struct ShaderProgGLIDs
+struct ShaderProgs
 {
     GLID spriteQuadGLID;
+    int spriteQuadProjUniLoc;
+    int spriteQuadViewUniLoc;
+    int spriteQuadTexturesUniLoc;
+
     GLID charQuadGLID;
+    int charQuadProjUniLoc;
+    int charQuadViewUniLoc;
+    int charQuadPosUniLoc;
+    int charQuadRotUniLoc;
+    int charQuadBlendUniLoc;
 };
 
 class AssetGroupManager
@@ -139,8 +148,8 @@ private:
     }
 };
 
-bool load_shader_progs(ShaderProgGLIDs &progGLIDs);
-void clean_shader_progs(ShaderProgGLIDs &progGLIDs);
+bool load_shader_progs(ShaderProgs &progs);
+void clean_shader_progs(ShaderProgs &progs);
 
 constexpr AssetID make_vanilla_asset_id(const int index)
 {

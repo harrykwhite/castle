@@ -234,31 +234,43 @@ static void init_music_with_fs(Music &music, FILE *const fs, const int musicCnt)
     }
 }
 
-bool load_shader_progs(ShaderProgGLIDs &progGLIDs)
+bool load_shader_progs(ShaderProgs &progs)
 {
-    progGLIDs.spriteQuadGLID = create_shader_prog_from_srcs(ik_spriteQuadVertShaderSrc, ik_spriteQuadFragShaderSrc);
+    // Load the sprite quad shader program.
+    progs.spriteQuadGLID = create_shader_prog_from_srcs(ik_spriteQuadVertShaderSrc, ik_spriteQuadFragShaderSrc);
 
-    if (!progGLIDs.spriteQuadGLID)
+    if (!progs.spriteQuadGLID)
     {
         return false;
     }
 
-    progGLIDs.charQuadGLID = create_shader_prog_from_srcs(ik_charQuadVertShaderSrc, ik_charQuadFragShaderSrc);
+    progs.spriteQuadProjUniLoc = glGetUniformLocation(progs.spriteQuadGLID, "u_proj");
+    progs.spriteQuadViewUniLoc = glGetUniformLocation(progs.spriteQuadGLID, "u_view");
+    progs.spriteQuadTexturesUniLoc = glGetUniformLocation(progs.spriteQuadGLID, "u_textures");
+    
+    // Load the character quad shader program.
+    progs.charQuadGLID = create_shader_prog_from_srcs(ik_charQuadVertShaderSrc, ik_charQuadFragShaderSrc);
 
-    if (!progGLIDs.charQuadGLID)
+    if (!progs.charQuadGLID)
     {
         return false;
     }
+
+    progs.charQuadProjUniLoc = glGetUniformLocation(progs.charQuadGLID, "u_proj");
+    progs.charQuadViewUniLoc = glGetUniformLocation(progs.charQuadGLID, "u_view");
+    progs.charQuadPosUniLoc = glGetUniformLocation(progs.charQuadGLID, "u_pos");
+    progs.charQuadRotUniLoc = glGetUniformLocation(progs.charQuadGLID, "u_rot");
+    progs.charQuadBlendUniLoc = glGetUniformLocation(progs.charQuadGLID, "u_blend");
 
     return true;
 }
 
-void clean_shader_progs(ShaderProgGLIDs &progGLIDs)
+void clean_shader_progs(ShaderProgs &progs)
 {
-    glDeleteProgram(progGLIDs.spriteQuadGLID);
-    glDeleteProgram(progGLIDs.charQuadGLID);
+    glDeleteProgram(progs.spriteQuadGLID);
+    glDeleteProgram(progs.charQuadGLID);
 
-    progGLIDs = {};
+    progs = {};
 }
 
 bool AssetGroupManager::init()

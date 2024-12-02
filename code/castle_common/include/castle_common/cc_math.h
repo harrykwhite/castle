@@ -238,7 +238,7 @@ struct Range
     int begin, end;
 };
 
-inline Matrix4x4 make_identity_matrix()
+inline Matrix4x4 make_identity_matrix_4x4()
 {
     Matrix4x4 mat = {};
     mat[0][0] = 1.0f;
@@ -248,7 +248,7 @@ inline Matrix4x4 make_identity_matrix()
     return mat;
 }
 
-inline Matrix4x4 make_ortho_matrix(const float left, const float right, const float bottom, const float top, const float near, const float far)
+inline Matrix4x4 make_ortho_matrix_4x4(const float left, const float right, const float bottom, const float top, const float near, const float far)
 {
     Matrix4x4 mat = {};
     mat[0][0] = 2.0f / (right - left);

@@ -3,12 +3,7 @@
 #include <numeric>
 #include "c_game.h"
 
-static inline TexUnit get_tex_unit_limit()
-{
-    int limit;
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &limit);
-    return std::min(limit, gk_texUnitLimitCap);
-}
+TexUnit g_texUnitLimit;
 
 static void init_render_layer(RenderLayer &layer, const RenderLayerInitInfo &initInfo)
 {
@@ -28,7 +23,7 @@ static void init_render_layer(RenderLayer &layer, const RenderLayerInitInfo &ini
         sb.quadBufVerts = cc::push_to_mem_arena<float>(g_permMemArena, gk_spriteBatchSlotVertsSize * initInfo.spriteBatchSlotCnt);
         sb.slotActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.spriteBatchSlotCnt));
         sb.slotTexUnits = cc::push_to_mem_arena<TexUnit>(g_permMemArena, initInfo.spriteBatchSlotCnt);
-        sb.texUnitInfos = cc::push_to_mem_arena<SpriteBatchTexUnitInfo>(g_permMemArena, get_tex_unit_limit());
+        sb.texUnitInfos = cc::push_to_mem_arena<SpriteBatchTexUnitInfo>(g_permMemArena, g_texUnitLimit);
     }
 
     // Initialise character batches.
@@ -66,9 +61,7 @@ static TexUnit find_sprite_batch_tex_unit_to_use(const RenderLayer &renderLayer,
 {
     TexUnit freeTexUnit = -1;
 
-    const int texUnitLimit = get_tex_unit_limit();
-
-    for (int i = 0; i < texUnitLimit; ++i)
+    for (int i = 0; i < g_texUnitLimit; ++i)
     {
         const SpriteBatchTexUnitInfo &texUnitInfo = renderLayer.spriteBatches[batchIndex].texUnitInfos[i];
 
@@ -114,7 +107,15 @@ static void activate_any_sprite_batch(Renderer &renderer, const int layerIndex)
     clear_bits(batch.slotActivity, layer.spriteBatchSlotCnt);
     memset(batch.slotTexUnits, 0, layer.spriteBatchSlotCnt * sizeof(TexUnit));
     batch.modifiedSlotRange = {};
-    memset(batch.texUnitInfos, 0, get_tex_unit_limit() * sizeof(SpriteBatchTexUnitInfo));
+    memset(batch.texUnitInfos, 0, g_texUnitLimit * sizeof(SpriteBatchTexUnitInfo));
+}
+
+void init_tex_unit_limit()
+{
+    int limit;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &limit);
+
+    g_texUnitLimit = std::min(limit, gk_texUnitLimitCap);
 }
 
 QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite)
@@ -136,6 +137,7 @@ QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite)
     {
         const int vertsLen = vertCnt * 4 * quadCnt;
         const auto verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
+        memset(verts, 0, sizeof(verts[0]) * vertsLen);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts[0]) * vertsLen, verts, GL_DYNAMIC_DRAW);
     }
 
@@ -238,31 +240,37 @@ void clean_renderer(Renderer &renderer)
     renderer = {};
 }
 
-void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgGLIDs &shaderProgGLIDs, const Camera *const cam)
+void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgs &shaderProgs, const Camera *const cam)
 {
     assert((renderer.camLayerCnt > 0) == (cam != nullptr));
 
+    // Clear the screen with the background colour.
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    const int texUnitLimit = get_tex_unit_limit();
+    // Set up texture units.
+    LOCAL_PERSIST int texUnits[gk_texUnitLimitCap];
+    LOCAL_PERSIST bool texUnitsInitialized;
 
-    int texUnits[gk_texUnitLimitCap];
-    std::iota(texUnits, texUnits + texUnitLimit, 0);
+    if (!texUnitsInitialized)
+    {
+        std::iota(texUnits, texUnits + g_texUnitLimit, 0);
+        texUnitsInitialized = true;
+    }
 
-    // Create the projection and view matrices.
-    const auto projMat = cc::make_ortho_matrix(0.0f, get_window_size().x, get_window_size().y, 0.0f, -1.0f, 1.0f);
+    // Create the projection matrices.
+    const auto projMat = cc::make_ortho_matrix_4x4(0.0f, get_window_size().x, get_window_size().y, 0.0f, -1.0f, 1.0f);
 
     // Define function for rendering a layer.
-    auto renderLayer = [&assetGroupManager, &shaderProgGLIDs, texUnitLimit, texUnits, &projMat](const RenderLayer &layer, const cc::Matrix4x4 &viewMat)
+    auto renderLayer = [&assetGroupManager, &shaderProgs, &projMat](const RenderLayer &layer, const cc::Matrix4x4 &viewMat)
     {
         // Render sprite batches.
-        glUseProgram(shaderProgGLIDs.spriteQuadGLID);
+        glUseProgram(shaderProgs.spriteQuadGLID);
 
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgGLIDs.spriteQuadGLID, "u_proj"), 1, false, reinterpret_cast<const float *>(projMat.elems));
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgGLIDs.spriteQuadGLID, "u_view"), 1, false, reinterpret_cast<const float *>(viewMat.elems));
+        glUniformMatrix4fv(shaderProgs.spriteQuadProjUniLoc, 1, false, reinterpret_cast<const float *>(projMat.elems));
+        glUniformMatrix4fv(shaderProgs.spriteQuadViewUniLoc, 1, false, reinterpret_cast<const float *>(viewMat.elems));
 
-        glUniform1iv(glGetUniformLocation(shaderProgGLIDs.spriteQuadGLID, "u_textures"), texUnitLimit, texUnits);
+        glUniform1iv(shaderProgs.spriteQuadTexturesUniLoc, g_texUnitLimit, texUnits);
 
         for (int i = 0; i < layer.spriteBatchCnt; ++i)
         {
@@ -274,10 +282,15 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
             const SpriteBatch &sb = layer.spriteBatches[i];
 
             // Bind texture GLIDs to units.
-            for (int j = 0; j < texUnitLimit; ++j)
+            for (int j = 0; j < g_texUnitLimit; ++j)
             {
+                if (!sb.texUnitInfos[j].refCnt)
+                {
+                    continue;
+                }
+
                 glActiveTexture(GL_TEXTURE0 + j);
-                glBindTexture(GL_TEXTURE_2D, sb.texUnitInfos[j].refCnt > 0 ? assetGroupManager.get_tex_gl_id(sb.texUnitInfos[j].texID) : 0);
+                glBindTexture(GL_TEXTURE_2D, assetGroupManager.get_tex_gl_id(sb.texUnitInfos[j].texID));
             }
 
             // Draw the batch.
@@ -286,10 +299,10 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
         }
 
         // Render character batches.
-        glUseProgram(shaderProgGLIDs.charQuadGLID);
+        glUseProgram(shaderProgs.charQuadGLID);
 
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_proj"), 1, false, reinterpret_cast<const float *>(projMat.elems));
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_view"), 1, false, reinterpret_cast<const float *>(viewMat.elems));
+        glUniformMatrix4fv(shaderProgs.charQuadProjUniLoc, 1, false, reinterpret_cast<const float *>(projMat.elems));
+        glUniformMatrix4fv(shaderProgs.charQuadViewUniLoc, 1, false, reinterpret_cast<const float *>(viewMat.elems));
 
         for (int i = 0; i < layer.charBatchCnt; ++i)
         {
@@ -300,11 +313,10 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
 
             CharBatch &cb = layer.charBatches[i];
 
-            glUniform2fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_pos"), 1, reinterpret_cast<const float *>(&cb.pos));
-            glUniform1f(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_rot"), cb.rot);
-            glUniform4fv(glGetUniformLocation(shaderProgGLIDs.charQuadGLID, "u_blend"), 1, reinterpret_cast<const float *>(&cb.blend));
+            glUniform2fv(shaderProgs.charQuadPosUniLoc, 1, reinterpret_cast<const float *>(&cb.pos));
+            glUniform1f(shaderProgs.charQuadRotUniLoc, cb.rot);
+            glUniform4fv(shaderProgs.charQuadBlendUniLoc, 1, reinterpret_cast<const float *>(&cb.blend));
 
-            // Bind font texture GLID.
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, assetGroupManager.get_font_tex_gl_id(cb.fontID));
 
@@ -329,7 +341,7 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
         while (i < renderer.camLayerCnt);
     }
 
-    const cc::Matrix4x4 defaultViewMat = cc::make_identity_matrix();
+    const cc::Matrix4x4 defaultViewMat = cc::make_identity_matrix_4x4();
 
     for (int i = renderer.camLayerCnt; i < renderer.layerCnt; ++i)
     {
@@ -503,7 +515,7 @@ void submit_sprite_batch_slots(Renderer &renderer)
             glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
             glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
 
-            const int offs = (gk_spriteBatchSlotVertsSize) * batch.modifiedSlotRange.begin * sizeof(float);
+            const int offs = (gk_spriteBatchSlotVertsSize)*batch.modifiedSlotRange.begin * sizeof(float);
             const int size = (gk_spriteBatchSlotVertsSize) * (batch.modifiedSlotRange.end - batch.modifiedSlotRange.begin) * sizeof(float);
             glBufferSubData(GL_ARRAY_BUFFER, offs, size, batch.quadBufVerts);
 
@@ -644,7 +656,8 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
 
     // Reserve memory to hold the vertex data for the characters.
     const int vertsLen = gk_charBatchSlotVertsSize * textLen;
-    float *const verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
+    const auto verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
+    memset(verts, 0, vertsLen * sizeof(verts[0]));
 
     // Write the vertex data.
     for (int i = 0; i < textLen; i++)
@@ -703,7 +716,7 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
     // Submit the vertex data.
     glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
     glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertsLen * sizeof(float), verts);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertsLen * sizeof(verts[0]), verts);
 }
 
 void clear_char_batch(const Renderer &renderer, const CharBatchKey &key)
@@ -714,7 +727,8 @@ void clear_char_batch(const Renderer &renderer, const CharBatchKey &key)
     glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
     glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
 
-    const int vertsLen = (gk_charBatchSlotVertsSize) * batch.slotCnt;
-    const float *const verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
-    glBufferData(GL_ARRAY_BUFFER, vertsLen * sizeof(float), verts, GL_DYNAMIC_DRAW);
+    const int vertsLen = (gk_charBatchSlotVertsSize)*batch.slotCnt;
+    const auto verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
+    memset(verts, 0, vertsLen * sizeof(verts[0]));
+    glBufferData(GL_ARRAY_BUFFER, vertsLen * sizeof(verts[0]), verts, GL_DYNAMIC_DRAW);
 }

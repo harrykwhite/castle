@@ -81,6 +81,9 @@ GameCleanupInfoBitset init_game(Game &game)
         return cleanupInfoBitset;
     }
 
+    // Initialise the texture unit limit global.
+    init_tex_unit_limit();
+
     // Enable blending.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -117,7 +120,7 @@ GameCleanupInfoBitset init_game(Game &game)
 
     cleanupInfoBitset |= ASSET_GROUP_MANAGER_CLEANUP_BIT;
 
-    if (!load_shader_progs(game.shaderProgGLIDs))
+    if (!load_shader_progs(game.shaderProgs))
     {
         return cleanupInfoBitset;
     }
@@ -222,12 +225,12 @@ void run_game_loop(Game &game)
         if (game.inWorld)
         {
             submit_sprite_batch_slots(game.world.renderer);
-            render(game.world.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, &game.world.cam);
+            render(game.world.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgs, &game.world.cam);
         }
         else
         {
             submit_sprite_batch_slots(game.mainMenu.renderer);
-            render(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgGLIDs, nullptr);
+            render(game.mainMenu.renderer, Color::make_black(), game.assetGroupManager, game.shaderProgs, nullptr);
         }
 
         glfwSwapBuffers(game.glfwWindow);
@@ -255,7 +258,7 @@ void clean_game(Game &game, const GameCleanupInfoBitset infoBitset)
 
     if (infoBitset & SHADER_PROGS_CLEANUP_BIT)
     {
-        clean_shader_progs(game.shaderProgGLIDs);
+        clean_shader_progs(game.shaderProgs);
     }
 
     if (infoBitset & ASSET_GROUP_MANAGER_CLEANUP_BIT)
