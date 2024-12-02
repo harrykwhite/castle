@@ -62,9 +62,6 @@ void init_world(World &world, MusicManager &musicManager, cc::MemArena &permMemA
 
     init_player_ent(world, assetGroupManager);
 
-    spawn_enemy_ent(world, {64.0f, 0.0f}, assetGroupManager);
-    spawn_enemy_ent(world, {80.0f, 40.0f}, assetGroupManager);
-
     for (int i = 0; i < gk_hitboxLimit; ++i)
     {
         world.hitboxes[i].sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_HITBOX_LAYER, make_core_asset_id(cc::PIXEL_TEX));
@@ -121,6 +118,9 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
 
     // Execute player tick.
     player_ent_tick(world, soundManager, inputManager, assetGroupManager);
+    
+    // Have the camera follow the player.
+    world.cam.pos = world.playerEnt.pos;
 
     // Execute enemy ticks.
     for (int i = 0; i < gk_enemyEntLimit; ++i)

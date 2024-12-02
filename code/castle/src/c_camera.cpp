@@ -8,8 +8,8 @@ cc::Matrix4x4 make_camera_view_matrix(const Camera &cam)
     mat[0][0] = gk_cameraScale;
     mat[1][1] = gk_cameraScale;
     mat[3][3] = 1.0f;
-    mat[3][0] = -(cam.pos.x - (get_window_size().x / 2.0f));
-    mat[3][1] = -(cam.pos.y - (get_window_size().y / 2.0f));
+    mat[3][0] = (-cam.pos.x * gk_cameraScale) + (get_window_size().x / 2.0f);
+    mat[3][1] = (-cam.pos.y * gk_cameraScale) + (get_window_size().y / 2.0f);
     return mat;
 }
 
