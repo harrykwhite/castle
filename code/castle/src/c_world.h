@@ -39,6 +39,7 @@ struct PlayerEnt
     
     cc::Vec2D pos;
     float rot;
+    cc::Vec2D vel;
 
     PlayerEntSword sword;
 };
@@ -83,10 +84,11 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
 
 void init_player_ent(World &world, const AssetGroupManager &assetGroupManager);
 void player_ent_tick(World &world, SoundManager &soundManager, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);
+cc::RectFloat make_player_ent_collider(PlayerEnt &ent, const AssetGroupManager &assetGroupManager);
 
 int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager);
 void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &assetGroupManager);
 void hurt_enemy_ent(World &world, const int entIndex, const int dmg, const cc::Vec2D force);
-cc::RectFloat make_enemy_ent_collider(EnemyEnt &enemyEnt, const AssetGroupManager &assetGroupManager);
+cc::RectFloat make_enemy_ent_collider(EnemyEnt &ent, const AssetGroupManager &assetGroupManager);
 
 int add_hitbox(World &world, const cc::RectFloat rect, const cc::Vec2D force);

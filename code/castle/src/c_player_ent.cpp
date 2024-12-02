@@ -60,19 +60,47 @@ void player_ent_tick(World &world, SoundManager &soundManager, const InputManage
 {
     PlayerEnt &ent = world.playerEnt;
 
+    //
+    // Movement
+    //
     const cc::Vec2D moveAxis = {
         static_cast<float>(inputManager.is_key_down(KEY_D)) - inputManager.is_key_down(KEY_A),
         static_cast<float>(inputManager.is_key_down(KEY_S)) - inputManager.is_key_down(KEY_W)
     };
 
-    ent.pos += moveAxis * ik_moveSpd;
+    const cc::Vec2D velTarg = moveAxis * ik_moveSpd;
+    ent.vel = cc::lerp(ent.vel, velTarg, 0.3f);
+    ent.pos += ent.vel;
 
     ent.rot = cc::calc_dir(ent.pos, screen_to_camera_pos(inputManager.get_mouse_pos(), world.cam));
 
-    write_player_ent_render_data(world, assetGroupManager);
+    //
+    // Enemy Collisions
+    //
+    {
+        const cc::RectFloat &collider = make_player_ent_collider(ent, assetGroupManager);
 
-    anim_inst_tick(ent.animInst);
+        for (int i = 0; i < gk_enemyEntLimit; ++i)
+        {
+            if (!is_bit_active(world.enemyEntActivity, i))
+            {
+                continue;
+            }
 
+            EnemyEnt &enemyEnt = world.enemyEnts[i];
+            const cc::RectFloat enemyEntCollider = make_enemy_ent_collider(enemyEnt, assetGroupManager);
+        
+            if (cc::do_rects_intersect(collider, enemyEntCollider))
+            {
+                ent.vel = (ent.pos - enemyEnt.pos).normalized() * 13.0f;
+                break;
+            }
+        }
+    }
+
+    //
+    // Sword
+    //
     if (inputManager.is_mouse_button_pressed(MOUSE_BUTTON_LEFT))
     {
         ent.sword.rotNeg = !ent.sword.rotNeg;
@@ -92,4 +120,20 @@ void player_ent_tick(World &world, SoundManager &soundManager, const InputManage
     }
 
     ent.sword.rotOffs = cc::lerp(ent.sword.rotOffs, calc_sword_rot_offs_targ(ent.sword), ik_swordRotOffsLerpFactor);
+
+    //
+    // Display
+    //
+    write_player_ent_render_data(world, assetGroupManager);
+    anim_inst_tick(ent.animInst);
+}
+
+cc::RectFloat make_player_ent_collider(PlayerEnt &ent, const AssetGroupManager &assetGroupManager)
+{
+    const cc::Vec2DInt size = get_anim_src_rect(ent.animInst).size;
+
+    return {
+        ent.pos - (size / 2.0f),
+        size
+    };
 }

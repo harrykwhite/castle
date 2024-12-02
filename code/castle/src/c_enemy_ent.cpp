@@ -1,13 +1,13 @@
 #include "c_world.h"
 
-constexpr AssetID ik_enemyEntTexID = make_core_asset_id(cc::ENEMY_ENT_TEX); // TEMP: This will depend on enemy type.
+constexpr AssetID ik_texID = make_core_asset_id(cc::ENEMY_ENT_TEX); // TEMP: This will depend on enemy type.
 
 static void write_enemy_ent_render_data(World &world, const int entIndex, const AssetGroupManager &assetGroupManager)
 {
     assert(is_bit_active(world.enemyEntActivity, entIndex));
 
     EnemyEnt &ent = world.enemyEnts[entIndex];
-    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_enemyEntTexID);
+    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_texID);
 
     const SpriteBatchSlotWriteData writeData = {
         .pos = ent.pos,
@@ -32,7 +32,7 @@ int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &
         EnemyEnt &ent = world.enemyEnts[entIndex];
 
         ent = {
-            .sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_ENEMY_ENT_LAYER, ik_enemyEntTexID),
+            .sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_ENEMY_ENT_LAYER, ik_texID),
             .pos = pos,
             .hp = 8
         };
@@ -52,7 +52,7 @@ void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &a
 
     // Write render data.
     {
-        const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_enemyEntTexID);
+        const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_texID);
 
         const SpriteBatchSlotWriteData writeData = {
             .pos = ent.pos,
@@ -84,12 +84,12 @@ void hurt_enemy_ent(World &world, const int entIndex, const int dmg, const cc::V
     }
 }
 
-cc::RectFloat make_enemy_ent_collider(EnemyEnt &enemyEnt, const AssetGroupManager &assetGroupManager)
+cc::RectFloat make_enemy_ent_collider(EnemyEnt &ent, const AssetGroupManager &assetGroupManager)
 {
-    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_enemyEntTexID);
+    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(ik_texID);
 
     return {
-        enemyEnt.pos - (texSize / 2.0f),
+        ent.pos - (texSize / 2.0f),
         texSize
     };
 }

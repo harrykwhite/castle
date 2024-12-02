@@ -11,6 +11,18 @@ struct Vec2D
 {
     float x, y;
 
+    inline Vec2D normalized() const
+    {
+        const float mag = sqrtf((x * x) + (y * y));
+
+        if (mag == 0.0f)
+        {
+            return {};
+        }
+
+        return *this / mag;
+    }
+
     constexpr Vec2D operator+(const Vec2D &other) const
     {
         return {x + other.x, y + other.y};
@@ -258,7 +270,12 @@ constexpr float rads_to_degs(const float rads)
 
 constexpr float lerp(const float a, const float b, const float t)
 {
-    return a + (t * (b - a));
+    return a + ((b - a) * t);
+}
+
+constexpr cc::Vec2D lerp(const cc::Vec2D a, const cc::Vec2D b, const float t)
+{
+    return a + ((b - a) * t);
 }
 
 inline float calc_dir(const Vec2D src, const Vec2D dest)

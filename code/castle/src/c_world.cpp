@@ -98,13 +98,13 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
     }
 
     // Handle enemy spawning.
-    if (world.enemyEntSpawnTime < gk_enemyEntSpawnInterval)
+    if (world.enemyEntSpawnTime > 0)
     {
-        ++world.enemyEntSpawnTime;
+        --world.enemyEntSpawnTime;
     }
     else
     {
-        const float spawnRange = 320.0f;
+        const float spawnRange = 240.0f;
 
         const cc::Vec2D spawnPos = {
             gen_rand_float(-spawnRange, spawnRange),
@@ -113,7 +113,7 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
 
         spawn_enemy_ent(world, spawnPos, assetGroupManager);
 
-        world.enemyEntSpawnTime = 0;
+        world.enemyEntSpawnTime = gk_enemyEntSpawnInterval;
     }
 
     // Execute player tick.
