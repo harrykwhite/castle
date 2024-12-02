@@ -160,7 +160,7 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
 SpriteBatchSlotKey take_any_sprite_batch_slot(Renderer &renderer, const int layerIndex, const AssetID texID);
 void release_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key);
 void write_to_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key, const SpriteBatchSlotWriteData &writeData, const AssetGroupManager &assetGroupManager);
-void clear_sprite_batch_slot(const Renderer &renderer, const SpriteBatchSlotKey &key);
+void clear_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key);
 void submit_sprite_batch_slots(Renderer &renderer);
 
 CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, const int slotCnt, const AssetID fontID, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager);

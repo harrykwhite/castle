@@ -478,16 +478,16 @@ void write_to_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &ke
     batch.modifiedSlotRange.end = std::max(batch.modifiedSlotRange.end, key.slotIndex + 1);
 }
 
-void clear_sprite_batch_slot(const Renderer &renderer, const SpriteBatchSlotKey &key)
+void clear_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key)
 {
     const RenderLayer &layer = renderer.layers[key.layerIndex];
-    const SpriteBatch &batch = layer.spriteBatches[key.batchIndex];
+    SpriteBatch &batch = layer.spriteBatches[key.batchIndex];
 
-    glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
-    glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
+    float *const verts = batch.quadBufVerts + (key.slotIndex * gk_spriteBatchSlotVertsSize);
+    memset(verts, 0, gk_spriteBatchSlotVertsSize * sizeof(verts[0]));
 
-    const float verts[gk_spriteBatchSlotVertsSize] = {};
-    glBufferSubData(GL_ARRAY_BUFFER, key.slotIndex * sizeof(verts), sizeof(verts), verts);
+    batch.modifiedSlotRange.begin = std::min(batch.modifiedSlotRange.begin, key.slotIndex);
+    batch.modifiedSlotRange.end = std::max(batch.modifiedSlotRange.end, key.slotIndex + 1);
 }
 
 void submit_sprite_batch_slots(Renderer &renderer)

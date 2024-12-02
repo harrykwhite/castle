@@ -2,6 +2,7 @@
 #include "cap_shared.h"
 
 static const char *const ik_texFilePathEnds[] = {
+    "\\textures\\pixel.png",
     "\\textures\\player_ent.png",
     "\\textures\\enemy_ent.png",
     "\\textures\\sword.png",

@@ -33,7 +33,8 @@ int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &
 
         ent = {
             .sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_ENEMY_ENT_LAYER, ik_enemyEntTexID),
-            .pos = pos
+            .pos = pos,
+            .hp = 3
         };
     }
 

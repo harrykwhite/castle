@@ -4,6 +4,8 @@
 
 static constexpr AssetID ik_texID = make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX);
 static constexpr float ik_moveSpd = 2.0f;
+static constexpr cc::Vec2D ik_swordHitboxSize = {26.0f, 26.0f};
+static constexpr int ik_swordHitboxDist = 34;
 static constexpr float ik_swordRotOffsLimit = cc::degs_to_rads(120.0f);
 static constexpr float ik_swordRotOffsLerpFactor = 0.3f;
 
@@ -73,6 +75,15 @@ void player_ent_tick(World &world, const InputManager &inputManager, const Asset
     if (inputManager.is_mouse_button_pressed(MOUSE_BUTTON_LEFT))
     {
         ent.sword.rotNeg = !ent.sword.rotNeg;
+
+        const cc::Vec2D hitboxCenterPos = ent.pos + cc::make_dir_vec_2d(ent.rot, ik_swordHitboxDist);
+
+        const cc::RectFloat hitbox = {
+            hitboxCenterPos - (ik_swordHitboxSize / 2.0f),
+            ik_swordHitboxSize
+        };
+
+        add_hitbox(world, hitbox);
     }
 
     ent.sword.rotOffs = cc::lerp(ent.sword.rotOffs, calc_sword_rot_offs_targ(ent.sword), ik_swordRotOffsLerpFactor);

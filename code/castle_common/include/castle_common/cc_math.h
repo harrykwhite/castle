@@ -83,7 +83,8 @@ struct Vec2DInt
 {
     int x, y;
 
-    operator struct Vec2D() const {
+    operator struct Vec2D() const
+    {
         return Vec2D(x, y);
     }
 
@@ -167,12 +168,14 @@ struct Matrix4x4
 
 union RectFloat
 {
-    struct {
+    struct
+    {
         Vec2D pos;
         Vec2D size;
     };
 
-    struct {
+    struct
+    {
         float x, y;
         float width, height;
     };
@@ -200,17 +203,20 @@ union RectFloat
 
 union Rect
 {
-    struct {
+    struct
+    {
         Vec2DInt pos;
         Vec2DInt size;
     };
 
-    struct {
+    struct
+    {
         int x, y;
         int width, height;
     };
 
-    operator union RectFloat() const {
+    operator union RectFloat() const
+    {
         return {pos, size};
     }
 
@@ -258,6 +264,11 @@ constexpr float lerp(const float a, const float b, const float t)
 inline float calc_dir(const Vec2D src, const Vec2D dest)
 {
     return atan2f(src.y - dest.y, dest.x - src.x);
+}
+
+inline Vec2D make_dir_vec_2d(const float dir, const float mag)
+{
+    return Vec2D(cosf(dir), -sinf(dir)) * mag;
 }
 
 inline Matrix4x4 make_identity_matrix_4x4()

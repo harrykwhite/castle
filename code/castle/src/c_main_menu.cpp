@@ -16,7 +16,7 @@ static RenderLayerInitInfo render_layer_factory(const int index)
             };
 
         default:
-            assert(false);
+            assert(false && "The main menu render layer factory does not support the provided layer index!");
             return {};
     }
 }

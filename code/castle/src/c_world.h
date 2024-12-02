@@ -7,11 +7,16 @@
 #include "c_animation.h"
 
 constexpr int gk_enemyEntLimit = 64;
+constexpr int gk_hitboxLimit = 16;
 
 enum WorldRenderLayer
 {
+    // Camera Layers
     WORLD_ENEMY_ENT_LAYER,
     WORLD_PLAYER_ENT_LAYER,
+    WORLD_HITBOX_LAYER, // TEMP: Only for debugging.
+
+    // Non-Camera Layers
     WORLD_CURSOR_LAYER,
 
     WORLD_LAYER_CNT
@@ -56,6 +61,10 @@ struct World
     EnemyEnt enemyEnts[gk_enemyEntLimit];
     StaticBitset<gk_enemyEntLimit> enemyEntActivity;
 
+    cc::RectFloat hitboxes[gk_hitboxLimit];
+    SpriteBatchSlotKey hitboxSBSlotKeys[gk_hitboxLimit];
+    StaticBitset<gk_hitboxLimit> hitboxActivity;
+
     SpriteBatchSlotKey cursorSBSlotKey;
 };
 
@@ -70,3 +79,5 @@ int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &
 void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &assetGroupManager);
 void damage_enemy_ent(World &world, const int entIndex, const int dmg);
 cc::RectFloat make_enemy_ent_collider(EnemyEnt &enemyEnt, const AssetGroupManager &assetGroupManager);
+
+int add_hitbox(World &world, const cc::RectFloat hitbox);

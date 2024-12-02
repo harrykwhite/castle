@@ -4,9 +4,7 @@ bool are_all_bits_active(const cc::Byte *const bytes, const int bitCnt)
 {
     assert(bitCnt > 0);
 
-    const int byteCnt = bits_to_bytes(bitCnt);
-
-    for (int i = 0; i < byteCnt - 1; ++i)
+    for (int i = 0; i < bitCnt / 8; ++i)
     {
         if (bytes[i] != 0xFF)
         {
@@ -14,11 +12,17 @@ bool are_all_bits_active(const cc::Byte *const bytes, const int bitCnt)
         }
     }
 
-    const cc::Byte lastByteMask = (1 << (bitCnt % 8)) - 1;
+    const int excessBitCnt = bitCnt % 8;
 
-    if ((bytes[byteCnt - 1] & lastByteMask) != lastByteMask)
+    if (excessBitCnt)
     {
-        return false;
+        const int byteCnt = bits_to_bytes(bitCnt);
+        const cc::Byte lastByteMask = (1 << excessBitCnt) - 1;
+
+        if ((bytes[byteCnt - 1] & lastByteMask) != lastByteMask)
+        {
+            return false;
+        }
     }
 
     return true;
