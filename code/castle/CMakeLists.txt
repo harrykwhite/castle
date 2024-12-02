@@ -47,5 +47,4 @@ add_dependencies(castle castle_asset_packer)
 
 add_custom_command(TARGET castle POST_BUILD
 	COMMAND $<TARGET_FILE:castle_asset_packer> ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets.dat
-	COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/assets.dat $<TARGET_FILE_DIR:castle>/assets.dat
 )

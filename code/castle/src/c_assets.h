@@ -50,7 +50,7 @@ struct Music
 {
     static constexpr int k_limit = 32;
 
-    char filenames[k_limit][256];
+    char filenames[k_limit][cc::gk_musicFileNameMaxLen + 1];
     cc::AudioInfo infos[k_limit];
 };
 

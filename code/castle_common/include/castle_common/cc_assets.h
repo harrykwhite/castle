@@ -13,6 +13,8 @@ constexpr int gk_texChannelCnt = 4;
 constexpr int gk_fontCharRangeBegin = 32;
 constexpr int gk_fontCharRangeSize = 95;
 
+constexpr int gk_musicFileNameMaxLen = 127;
+
 using AudioSample = short;
 
 enum CoreTexIndex

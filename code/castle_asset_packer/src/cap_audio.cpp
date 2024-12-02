@@ -13,6 +13,8 @@ static const char *const ik_musicFilePathEnds[] = {
 
 static_assert(cc::CORE_MUSIC_CNT == CC_STATIC_ARRAY_LEN(ik_musicFilePathEnds));
 
+static const char *const ik_outputMusicFileNameExt = ".music.dat";
+
 static bool load_audio_file_and_write_data(const char *const filePath, FILE *const infoFS, FILE *const samplesFS)
 {
     // Open the audio file.
@@ -80,31 +82,33 @@ bool pack_sounds(FILE *const assetFileStream, const char *const assetsDir, cc::M
 
 bool pack_music(FILE *const assetFileStream, const char *const assetsDir, cc::MemArena &memArena)
 {
+    const int outputMusicFileNameExtLen = strlen(ik_outputMusicFileNameExt);
+
     for (const char *const musicFilePathEnd : ik_musicFilePathEnds)
     {
         // Determine the music file path.
         char musicFilePath[gk_assetFilePathMaxLen + 1];
-        snprintf(musicFilePath, sizeof(musicFilePath), "%s%s", assetsDir, musicFilePathEnd);
+        const int musicFilePathLen = snprintf(musicFilePath, sizeof(musicFilePath), "%s%s", assetsDir, musicFilePathEnd);
 
-        // Determine the output music file name and path.
-        char outputMusicFileName[256];
+        // Determine the output music file name, verifying that it does not exceed the length limit.
+        char outputMusicFileName[cc::gk_musicFileNameMaxLen + 1];
         const int outputMusicFileNameStemLen = cc::extract_filename_from_path_no_ext(musicFilePath, outputMusicFileName, sizeof(outputMusicFileName));
-        strncat(outputMusicFileName, ".dat", sizeof(outputMusicFileName) - outputMusicFileNameStemLen - 1);
+        const int outputMusicFileNameLen = outputMusicFileNameStemLen + outputMusicFileNameExtLen;
 
-        // Check and write the length of the output music file name.
-        const int outputMusicFileNameLen = outputMusicFileNameStemLen + 4; // Account for the ".dat" extension.
-
-        if (outputMusicFileNameLen > 255)
+        if (outputMusicFileNameLen > cc::gk_musicFileNameMaxLen)
         {
-            cc::log_error("Output music file name \"%s\" exceeds the length limit of 255 characters!", outputMusicFileName);
+            cc::log_error("The output music file name for \"%s\" would exceed the length limit of %d characters!", outputMusicFileName, cc::gk_musicFileNameMaxLen);
             return false;
         }
 
-        const unsigned char outputMusicFileNameLenUC = outputMusicFileNameLen;
-        fwrite(&outputMusicFileNameLenUC, sizeof(outputMusicFileNameLenUC), 1, assetFileStream); // First byte is the string length.
+        strcat(outputMusicFileName, ik_outputMusicFileNameExt);
 
-        // Write the output music file name.
-        fwrite(outputMusicFileName, sizeof(*outputMusicFileName), outputMusicFileNameLen, assetFileStream); // The rest of the bytes are the characters without a terminating '\0'.
+        // Write the length of the output music file name (a single byte).
+        const cc::Byte outputMusicFileNameLenByte = outputMusicFileNameLen;
+        fwrite(&outputMusicFileNameLenByte, sizeof(outputMusicFileNameLenByte), 1, assetFileStream);
+
+        // Write the output music file name (not null-terminated).
+        fwrite(outputMusicFileName, sizeof(*outputMusicFileName), outputMusicFileNameLen, assetFileStream);
 
         // Open the output music file.
         FILE *const outputMusicFileStream = fopen(outputMusicFileName, "wb");

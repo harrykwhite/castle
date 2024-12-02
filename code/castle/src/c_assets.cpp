@@ -225,7 +225,7 @@ static void init_music_with_fs(Music &music, FILE *const fs, const int musicCnt)
 
     for (int i = 0; i < musicCnt; ++i)
     {
-        const auto filenameLen = cc::read_from_fs<unsigned char>(fs);
+        const auto filenameLen = cc::read_from_fs<cc::Byte>(fs);
 
         fread(music.filenames[i], 1, filenameLen, fs);
         music.filenames[i][filenameLen] = '\0';
