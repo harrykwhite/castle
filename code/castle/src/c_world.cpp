@@ -1,5 +1,7 @@
 #include "c_world.h"
 
+#include "c_rand.h"
+
 static RenderLayerInitInfo render_layer_factory(const int index)
 {
     switch (index)
@@ -96,6 +98,25 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
 
         clear_sprite_batch_slot(world.renderer, world.hitboxes[i].sbSlotKey);
         deactivate_bit(world.hitboxActivity, i);
+    }
+
+    // Handle enemy spawning.
+    if (world.enemyEntSpawnTime < gk_enemyEntSpawnInterval)
+    {
+        ++world.enemyEntSpawnTime;
+    }
+    else
+    {
+        const float spawnRange = 320.0f;
+
+        const cc::Vec2D spawnPos = {
+            gen_rand_float(-spawnRange, spawnRange),
+            gen_rand_float(-spawnRange, spawnRange)
+        };
+
+        spawn_enemy_ent(world, spawnPos, assetGroupManager);
+
+        world.enemyEntSpawnTime = 0;
     }
 
     // Execute player tick.

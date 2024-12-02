@@ -8,6 +8,7 @@
 #include "c_audio.h"
 
 constexpr int gk_enemyEntLimit = 64;
+constexpr int gk_enemyEntSpawnInterval = 180;
 constexpr int gk_hitboxLimit = 16;
 
 enum WorldRenderLayer
@@ -68,6 +69,7 @@ struct World
 
     EnemyEnt enemyEnts[gk_enemyEntLimit];
     StaticBitset<gk_enemyEntLimit> enemyEntActivity;
+    int enemyEntSpawnTime;
 
     Hitbox hitboxes[gk_hitboxLimit];
     StaticBitset<gk_hitboxLimit> hitboxActivity;
