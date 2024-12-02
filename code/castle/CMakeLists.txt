@@ -17,6 +17,7 @@ add_executable(castle
 	src/c_player_ent.cpp
 	src/c_enemy_ent.cpp
 	src/c_world.cpp
+	src/c_rand.cpp
 	src/c_utils.cpp
 	${CMAKE_SOURCE_DIR}/code/vendor/glad/src/glad.c
 
@@ -30,6 +31,7 @@ add_executable(castle
 	src/c_animation.h
 	src/c_main_menu.h
 	src/c_world.h
+	src/c_rand.h
 	src/c_utils.h
 )
 

@@ -1,6 +1,7 @@
 #include "c_game.h"
 
 #include <castle_common/cc_debugging.h>
+#include "c_rand.h"
 
 static constexpr int ik_permMemArenaSize = (1 << 20) * 256;
 static constexpr int ik_tempMemArenaSize = (1 << 20) * 64;
@@ -34,6 +35,9 @@ GameCleanupInfoBitset init_game(Game &game)
     game = {};
 
     GameCleanupInfoBitset cleanupInfoBitset = 0;
+
+    // Initialise RNG.
+    init_rng();
 
     // Initialise the memory arenas.
     if (!cc::init_mem_arena(game.permMemArena, ik_permMemArenaSize))
