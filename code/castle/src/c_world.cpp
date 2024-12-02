@@ -14,7 +14,7 @@ static RenderLayerInitInfo render_layer_factory(const int index)
         case WORLD_PLAYER_ENT_LAYER:
             return {
                 .spriteBatchCnt = 1,
-                .spriteBatchSlotCnt = 1,
+                .spriteBatchSlotCnt = 2,
                 .charBatchCnt = 1
             };
 

@@ -5,6 +5,8 @@
 namespace cc
 {
 
+constexpr float gk_pi = 3.14159265358979323846f;
+
 struct Vec2D
 {
     float x, y;
@@ -238,6 +240,26 @@ struct Range
     int begin, end;
 };
 
+constexpr float degs_to_rads(const float degs)
+{
+    return degs * (gk_pi / 180.0f);
+}
+
+constexpr float rads_to_degs(const float rads)
+{
+    return rads * (180.0f / gk_pi);
+}
+
+constexpr float lerp(const float a, const float b, const float t)
+{
+    return a + (t * (b - a));
+}
+
+inline float calc_dir(const Vec2D src, const Vec2D dest)
+{
+    return atan2f(src.y - dest.y, dest.x - src.x);
+}
+
 inline Matrix4x4 make_identity_matrix_4x4()
 {
     Matrix4x4 mat = {};
@@ -264,11 +286,6 @@ inline Matrix4x4 make_ortho_matrix_4x4(const float left, const float right, cons
 inline bool do_rects_intersect(const RectFloat &a, const RectFloat &b)
 {
     return a.right() > b.x && b.right() > a.x && a.bottom() > b.y && b.bottom() > a.y;
-}
-
-inline float calc_dir(const Vec2D src, const Vec2D dest)
-{
-    return atan2f(src.y - dest.y, dest.x - src.x);
 }
 
 }

@@ -5,8 +5,6 @@
 namespace cc
 {
 
-using Byte = unsigned char;
-
 struct Version
 {
     int major;

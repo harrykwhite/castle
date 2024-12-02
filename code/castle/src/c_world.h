@@ -6,7 +6,6 @@
 #include "c_rendering.h"
 #include "c_animation.h"
 
-constexpr float gk_playerMoveSpd = 2.0f;
 constexpr int gk_enemyEntLimit = 64;
 
 enum WorldRenderLayer
@@ -18,12 +17,23 @@ enum WorldRenderLayer
     WORLD_LAYER_CNT
 };
 
+struct PlayerEntSword
+{
+    SpriteBatchSlotKey sbSlotKey;
+    bool rotNeg;
+    float rotOffs;
+};
+
 struct PlayerEnt
 {
     SpriteBatchSlotKey sbSlotKey;
+    
     AnimationInst animInst;
+    
     cc::Vec2D pos;
     float rot;
+
+    PlayerEntSword sword;
 };
 
 // NOTE: Just a temporary grouping. Transform data will likely need to be distinguished from other data later on.

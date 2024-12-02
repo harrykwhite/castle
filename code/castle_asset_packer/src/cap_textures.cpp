@@ -4,6 +4,7 @@
 static const char *const ik_texFilePathEnds[] = {
     "\\textures\\player_ent.png",
     "\\textures\\enemy_ent.png",
+    "\\textures\\sword.png",
     "\\textures\\tiles\\dirt.png",
     "\\textures\\tiles\\stone.png",
     "\\textures\\ui\\inv_slot.png",

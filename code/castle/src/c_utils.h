@@ -11,6 +11,13 @@
 using GLID = GLuint;
 using ALID = ALuint;
 
+enum Sign
+{
+    SIGN_NEG = -1,
+    SIGN_ZERO = 0,
+    SIGN_POS = 1
+};
+
 constexpr int bits_to_bytes(const int bitCnt)
 {
     return ((bitCnt + 7) & ~7) / 8;
