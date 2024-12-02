@@ -87,7 +87,7 @@ class AssetGroupManager
 public:
     static constexpr int k_groupLimit = 1 + k_modLimit;
 
-    bool init();
+    bool init(cc::MemArena &permMemArena, cc::MemArena &tempMemArena);
     void clean();
 
     inline GLID get_tex_gl_id(const AssetID &id) const
@@ -137,7 +137,7 @@ private:
     int m_groupVersions[k_groupLimit];
     StaticBitset<k_groupLimit> m_groupActivity;
 
-    bool init_vanilla_group();
+    bool init_core_group(cc::MemArena &tempMemArena);
     void clean_asset_group(const int index);
 
     inline void asset_id_asserts(const AssetID &id, const int assetCnt) const
@@ -151,7 +151,7 @@ private:
 bool load_shader_progs(ShaderProgs &progs);
 void clean_shader_progs(ShaderProgs &progs);
 
-constexpr AssetID make_vanilla_asset_id(const int index)
+constexpr AssetID make_core_asset_id(const int index)
 {
     return {
         .groupIndex = 0,

@@ -31,15 +31,15 @@ static cc::Vec2D get_start_text_pos()
     return {get_window_size().x / 2.0f, (get_window_size().y / 2.0f) + ik_textCenterVerOffs};
 }
 
-void init_main_menu(MainMenu &menu, const AssetGroupManager &assetGroupManager)
+void init_main_menu(MainMenu &menu, cc::MemArena &permMemArena, cc::MemArena &tempMemArena, const AssetGroupManager &assetGroupManager)
 {
-    init_renderer(menu.renderer, MAIN_MENU_LAYER_CNT, 0, render_layer_factory);
+    init_renderer(menu.renderer, permMemArena, MAIN_MENU_LAYER_CNT, 0, render_layer_factory);
 
-    menu.titleTextCBKey = activate_any_char_batch(menu.renderer, MAIN_MENU_GENERAL_LAYER, 32, make_vanilla_asset_id(cc::EB_GARAMOND_72_VANILLA_FONT), get_title_text_pos(), assetGroupManager);
-    write_to_char_batch(menu.renderer, menu.titleTextCBKey, "Castle", FONT_HOR_ALIGN_CENTER, FONT_VER_ALIGN_CENTER, assetGroupManager);
+    menu.titleTextCBKey = activate_any_char_batch(menu.renderer, MAIN_MENU_GENERAL_LAYER, 32, make_core_asset_id(cc::EB_GARAMOND_72_FONT), get_title_text_pos(), assetGroupManager);
+    write_to_char_batch(menu.renderer, tempMemArena, menu.titleTextCBKey, "Castle", FONT_HOR_ALIGN_CENTER, FONT_VER_ALIGN_CENTER, assetGroupManager);
 
-    menu.startTextCBKey = activate_any_char_batch(menu.renderer, MAIN_MENU_GENERAL_LAYER, 32, make_vanilla_asset_id(cc::EB_GARAMOND_24_VANILLA_FONT), get_start_text_pos(), assetGroupManager);
-    write_to_char_batch(menu.renderer, menu.startTextCBKey, "Press [Enter] to Start", FONT_HOR_ALIGN_CENTER, FONT_VER_ALIGN_CENTER, assetGroupManager);
+    menu.startTextCBKey = activate_any_char_batch(menu.renderer, MAIN_MENU_GENERAL_LAYER, 32, make_core_asset_id(cc::EB_GARAMOND_24_FONT), get_start_text_pos(), assetGroupManager);
+    write_to_char_batch(menu.renderer, tempMemArena, menu.startTextCBKey, "Press [Enter] to Start", FONT_HOR_ALIGN_CENTER, FONT_VER_ALIGN_CENTER, assetGroupManager);
 }
 
 void clean_main_menu(MainMenu &menu)

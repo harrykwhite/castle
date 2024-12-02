@@ -11,18 +11,6 @@
 #include "c_audio.h"
 #include "c_main_menu.h"
 #include "c_world.h"
-#include "c_animation.h"
-
-constexpr int gk_permMemArenaSize = (1 << 20) * 256;
-extern cc::MemArena g_permMemArena; // Exists for the duration of the game.
-
-constexpr int gk_tempMemArenaSize = (1 << 20) * 64;
-extern cc::MemArena g_tempMemArena; // Reset at the beginning of each frame, generally used just as scratch space.
-
-constexpr int gk_glVersionMajor = 4;
-constexpr int gk_glVersionMinor = 1;
-
-const char *const gk_windowTitle = "Castle";
 
 using GameCleanupInfoBitset = unsigned short;
 
@@ -41,15 +29,15 @@ enum GameCleanupInfoBits : GameCleanupInfoBitset
 
 struct Game
 {
-    static constexpr int k_targTicksPerSec = 60;
-    static constexpr double k_targTickDur = 1.0 / k_targTicksPerSec;
+    cc::MemArena permMemArena; // Exists for the duration of the game.
+    cc::MemArena tempMemArena; // Reset at the beginning of each frame, generally used just as scratch space.
 
     GLFWwindow *glfwWindow;
 
     ALCdevice *alDevice;
     ALCcontext *alContext;
 
-    StaticBitset<k_modLimit> modActivityBits;
+    StaticBitset<k_modLimit> modActivity;
 
     AssetGroupManager assetGroupManager;
     ShaderProgs shaderProgs;

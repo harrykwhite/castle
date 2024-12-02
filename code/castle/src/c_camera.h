@@ -2,9 +2,10 @@
 
 #include <castle_common/cc_math.h>
 
+constexpr float gk_cameraScale = 2.0f; // TEMP: Likely to be modifiable in an options menu later.
+
 struct Camera
 {
-    static constexpr float k_scale = 2.0f; // TEMP: Likely to be modifiable in an options menu later.
     cc::Vec2D pos;
 };
 

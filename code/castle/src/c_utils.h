@@ -3,10 +3,7 @@
 #include <assert.h>
 #include <glad/glad.h>
 #include <AL/al.h>
-#include <castle_common/cc_misc.h>
 #include <castle_common/cc_mem.h>
-
-#define LOCAL_PERSIST static
 
 using GLID = GLuint;
 using ALID = ALuint;

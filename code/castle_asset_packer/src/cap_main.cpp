@@ -32,16 +32,16 @@ int main(const int argCnt, const char *const *const args)
     }
 
     // Write asset counts to the file header.
-    const int texCnt = cc::VANILLA_TEX_CNT;
+    const int texCnt = cc::CORE_TEX_CNT;
     fwrite(&texCnt, sizeof(texCnt), 1, assetsFileStream);
 
-    const int fontCnt = cc::VANILLA_FONT_CNT;
+    const int fontCnt = cc::CORE_FONT_CNT;
     fwrite(&fontCnt, sizeof(fontCnt), 1, assetsFileStream);
 
-    const int sndCnt = cc::VANILLA_SOUND_CNT;
+    const int sndCnt = cc::CORE_SOUND_CNT;
     fwrite(&sndCnt, sizeof(sndCnt), 1, assetsFileStream);
 
-    const int musicCnt = cc::VANILLA_MUSIC_CNT;
+    const int musicCnt = cc::CORE_MUSIC_CNT;
     fwrite(&musicCnt, sizeof(musicCnt), 1, assetsFileStream);
 
     // Create the memory arena.

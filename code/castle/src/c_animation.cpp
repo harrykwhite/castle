@@ -2,9 +2,10 @@
 
 #include "c_game.h"
 
-AnimationType *g_vanillaAnimTypes;
+AnimationType *g_coreAnimTypes;
 
-static cc::Rect player_ent_anim_src_rect_builder(const int frameIndex)
+static
+cc::Rect player_ent_anim_src_rect_builder(const int frameIndex)
 {
     switch (frameIndex)
     {
@@ -17,14 +18,14 @@ static cc::Rect player_ent_anim_src_rect_builder(const int frameIndex)
     }
 }
 
-void init_vanilla_anim_types()
+void init_core_anim_types(cc::MemArena &permMemArena)
 {
-    g_vanillaAnimTypes = cc::push_to_mem_arena<AnimationType>(g_permMemArena, VANILLA_ANIM_TYPE_CNT);
+    g_coreAnimTypes = cc::push_to_mem_arena<AnimationType>(permMemArena, CORE_ANIM_TYPE_CNT);
 
-    g_vanillaAnimTypes[PLAYER_ENT_IDLE_VANILLA_ANIM] = {
+    g_coreAnimTypes[PLAYER_ENT_IDLE_CORE_ANIM] = {
         .srcRectBuilder = player_ent_anim_src_rect_builder,
         .srcRectCnt = 2,
-        .texID = make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX)
+        .texID = make_core_asset_id(cc::PLAYER_ENT_TEX)
     };
 }
 
@@ -37,7 +38,7 @@ void anim_inst_tick(AnimationInst &animInst)
     else
     {
         ++animInst.frameIndex;
-        animInst.frameIndex %= g_vanillaAnimTypes[animInst.typeIndex].srcRectCnt;
+        animInst.frameIndex %= g_coreAnimTypes[animInst.typeIndex].srcRectCnt;
 
         animInst.frameTime = 0;
     }

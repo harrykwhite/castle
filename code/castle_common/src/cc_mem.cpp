@@ -7,6 +7,8 @@ bool init_mem_arena(MemArena &arena, const int size)
 {
     assert(size > 0);
 
+    arena = {};
+
     arena.buf = static_cast<Byte *>(malloc(size));
 
     if (!arena.buf)

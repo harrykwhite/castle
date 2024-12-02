@@ -3,33 +3,37 @@
 #include <numeric>
 #include "c_game.h"
 
-TexUnit g_texUnitLimit;
+TexUnit i_texUnitLimit;
 
-static void init_render_layer(RenderLayer &layer, const RenderLayerInitInfo &initInfo)
+constexpr int ik_quadLimit = std::max(RenderLayer::sk_spriteBatchSlotLimit, CharBatch::sk_slotLimit);
+constexpr int ik_quadIndicesLen = 6 * ik_quadLimit;
+unsigned short i_quadIndices[ik_quadIndicesLen];
+
+static void init_render_layer(RenderLayer &layer, cc::MemArena &permMemArena, const RenderLayerInitInfo &initInfo)
 {
     assert(initInfo.spriteBatchCnt >= 0);
     assert(initInfo.spriteBatchSlotCnt >= 0);
     assert(initInfo.charBatchCnt >= 0);
 
     // Initialise sprite batches.
-    layer.spriteBatches = cc::push_to_mem_arena<SpriteBatch>(g_permMemArena, initInfo.spriteBatchCnt);
+    layer.spriteBatches = cc::push_to_mem_arena<SpriteBatch>(permMemArena, initInfo.spriteBatchCnt);
     layer.spriteBatchCnt = initInfo.spriteBatchCnt;
     layer.spriteBatchSlotCnt = initInfo.spriteBatchSlotCnt;
-    layer.spriteBatchActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.spriteBatchCnt));
+    layer.spriteBatchActivity = cc::push_to_mem_arena<cc::Byte>(permMemArena, bits_to_bytes(initInfo.spriteBatchCnt));
 
     for (int i = 0; i < initInfo.spriteBatchCnt; ++i)
     {
         SpriteBatch &sb = layer.spriteBatches[i];
-        sb.quadBufVerts = cc::push_to_mem_arena<float>(g_permMemArena, gk_spriteBatchSlotVertsSize * initInfo.spriteBatchSlotCnt);
-        sb.slotActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.spriteBatchSlotCnt));
-        sb.slotTexUnits = cc::push_to_mem_arena<TexUnit>(g_permMemArena, initInfo.spriteBatchSlotCnt);
-        sb.texUnitInfos = cc::push_to_mem_arena<SpriteBatchTexUnitInfo>(g_permMemArena, g_texUnitLimit);
+        sb.quadBufVerts = cc::push_to_mem_arena<float>(permMemArena, gk_spriteBatchSlotVertsCnt * initInfo.spriteBatchSlotCnt);
+        sb.slotActivity = cc::push_to_mem_arena<cc::Byte>(permMemArena, bits_to_bytes(initInfo.spriteBatchSlotCnt));
+        sb.slotTexUnits = cc::push_to_mem_arena<TexUnit>(permMemArena, initInfo.spriteBatchSlotCnt);
+        sb.texUnitInfos = cc::push_to_mem_arena<SpriteBatchTexUnitInfo>(permMemArena, i_texUnitLimit);
     }
 
     // Initialise character batches.
-    layer.charBatches = cc::push_to_mem_arena<CharBatch>(g_permMemArena, initInfo.charBatchCnt);
+    layer.charBatches = cc::push_to_mem_arena<CharBatch>(permMemArena, initInfo.charBatchCnt);
     layer.charBatchCnt = initInfo.charBatchCnt;
-    layer.charBatchActivity = cc::push_to_mem_arena<cc::Byte>(g_permMemArena, bits_to_bytes(initInfo.charBatchCnt));
+    layer.charBatchActivity = cc::push_to_mem_arena<cc::Byte>(permMemArena, bits_to_bytes(initInfo.charBatchCnt));
 }
 
 static void clean_render_layer(RenderLayer &layer)
@@ -61,7 +65,7 @@ static TexUnit find_sprite_batch_tex_unit_to_use(const RenderLayer &renderLayer,
 {
     TexUnit freeTexUnit = -1;
 
-    for (int i = 0; i < g_texUnitLimit; ++i)
+    for (int i = 0; i < i_texUnitLimit; ++i)
     {
         const SpriteBatchTexUnitInfo &texUnitInfo = renderLayer.spriteBatches[batchIndex].texUnitInfos[i];
 
@@ -103,19 +107,28 @@ static void activate_any_sprite_batch(Renderer &renderer, const int layerIndex)
     SpriteBatch &batch = layer.spriteBatches[batchIndex];
 
     batch.quadBufGLIDs = make_quad_buf(layer.spriteBatchSlotCnt, true);
-    memset(batch.quadBufVerts, 0, gk_spriteBatchSlotVertsSize * layer.spriteBatchSlotCnt * sizeof(float));
+    memset(batch.quadBufVerts, 0, gk_spriteBatchSlotVertsSize * layer.spriteBatchSlotCnt);
     clear_bits(batch.slotActivity, layer.spriteBatchSlotCnt);
     memset(batch.slotTexUnits, 0, layer.spriteBatchSlotCnt * sizeof(TexUnit));
     batch.modifiedSlotRange = {};
-    memset(batch.texUnitInfos, 0, g_texUnitLimit * sizeof(SpriteBatchTexUnitInfo));
+    memset(batch.texUnitInfos, 0, i_texUnitLimit * sizeof(SpriteBatchTexUnitInfo));
 }
 
-void init_tex_unit_limit()
+void init_rendering_internals()
 {
     int limit;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &limit);
+    i_texUnitLimit = std::min(limit, gk_texUnitLimitCap);
 
-    g_texUnitLimit = std::min(limit, gk_texUnitLimitCap);
+    for (int i = 0; i < ik_quadLimit; i++)
+    {
+        i_quadIndices[(i * 6) + 0] = (i * 4) + 0;
+        i_quadIndices[(i * 6) + 1] = (i * 4) + 1;
+        i_quadIndices[(i * 6) + 2] = (i * 4) + 2;
+        i_quadIndices[(i * 6) + 3] = (i * 4) + 2;
+        i_quadIndices[(i * 6) + 4] = (i * 4) + 3;
+        i_quadIndices[(i * 6) + 5] = (i * 4) + 0;
+    }
 }
 
 QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite)
@@ -133,35 +146,12 @@ QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite)
     // Generate vertex buffer.
     glGenBuffers(1, &glIDs.vertBufGLID);
     glBindBuffer(GL_ARRAY_BUFFER, glIDs.vertBufGLID);
-
-    {
-        const int vertsLen = vertCnt * 4 * quadCnt;
-        const auto verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
-        memset(verts, 0, sizeof(verts[0]) * vertsLen);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts[0]) * vertsLen, verts, GL_DYNAMIC_DRAW);
-    }
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertCnt * 4 * quadCnt, nullptr, GL_DYNAMIC_DRAW);
 
     // Generate element buffer.
     glGenBuffers(1, &glIDs.elemBufGLID);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glIDs.elemBufGLID);
-
-    {
-        // TODO: Have it so that the indices are only set up once; all batches use a copy of this same data, so recalculation isn't needed.
-        const int indicesLen = 6 * quadCnt;
-        const auto indices = cc::push_to_mem_arena<unsigned short>(g_tempMemArena, indicesLen);
-
-        for (int i = 0; i < quadCnt; i++)
-        {
-            indices[(i * 6) + 0] = (i * 4) + 0;
-            indices[(i * 6) + 1] = (i * 4) + 1;
-            indices[(i * 6) + 2] = (i * 4) + 2;
-            indices[(i * 6) + 3] = (i * 4) + 2;
-            indices[(i * 6) + 4] = (i * 4) + 3;
-            indices[(i * 6) + 5] = (i * 4) + 0;
-        }
-
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indicesLen, indices, GL_STATIC_DRAW);
-    }
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned short) * 6 * quadCnt, i_quadIndices, GL_STATIC_DRAW);
 
     // Set vertex attribute pointers.
     const int vertsStride = sizeof(float) * vertCnt;
@@ -213,7 +203,7 @@ void clean_quad_buf(QuadBufGLIDs &glIDs)
     glIDs = {};
 }
 
-void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory)
+void init_renderer(Renderer &renderer, cc::MemArena &permMemArena, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory)
 {
     assert(layerCnt > 0);
     assert(camLayerCnt >= 0 && camLayerCnt <= layerCnt);
@@ -222,11 +212,11 @@ void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt
     renderer.layerCnt = layerCnt;
     renderer.camLayerCnt = camLayerCnt;
 
-    renderer.layers = cc::push_to_mem_arena<RenderLayer>(g_permMemArena, layerCnt);
+    renderer.layers = cc::push_to_mem_arena<RenderLayer>(permMemArena, layerCnt);
 
     for (int i = 0; i < layerCnt; ++i)
     {
-        init_render_layer(renderer.layers[i], layerInitInfoFactory(i));
+        init_render_layer(renderer.layers[i], permMemArena, layerInitInfoFactory(i));
     }
 }
 
@@ -249,12 +239,12 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Set up texture units.
-    LOCAL_PERSIST int texUnits[gk_texUnitLimitCap];
-    LOCAL_PERSIST bool texUnitsInitialized;
+    static int texUnits[gk_texUnitLimitCap];
+    static bool texUnitsInitialized;
 
     if (!texUnitsInitialized)
     {
-        std::iota(texUnits, texUnits + g_texUnitLimit, 0);
+        std::iota(texUnits, texUnits + i_texUnitLimit, 0);
         texUnitsInitialized = true;
     }
 
@@ -270,7 +260,7 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
         glUniformMatrix4fv(shaderProgs.spriteQuadProjUniLoc, 1, false, reinterpret_cast<const float *>(projMat.elems));
         glUniformMatrix4fv(shaderProgs.spriteQuadViewUniLoc, 1, false, reinterpret_cast<const float *>(viewMat.elems));
 
-        glUniform1iv(shaderProgs.spriteQuadTexturesUniLoc, g_texUnitLimit, texUnits);
+        glUniform1iv(shaderProgs.spriteQuadTexturesUniLoc, i_texUnitLimit, texUnits);
 
         for (int i = 0; i < layer.spriteBatchCnt; ++i)
         {
@@ -282,7 +272,7 @@ void render(const Renderer &renderer, const Color &bgColor, const AssetGroupMana
             const SpriteBatch &sb = layer.spriteBatches[i];
 
             // Bind texture GLIDs to units.
-            for (int j = 0; j < g_texUnitLimit; ++j)
+            for (int j = 0; j < i_texUnitLimit; ++j)
             {
                 if (!sb.texUnitInfos[j].refCnt)
                 {
@@ -424,7 +414,7 @@ void write_to_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &ke
     const int texUnit = batch.slotTexUnits[key.slotIndex];
     const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(batch.texUnitInfos[texUnit].texID);
 
-    float *const verts = batch.quadBufVerts + (key.slotIndex * gk_spriteBatchSlotVertsSize);
+    float *const verts = batch.quadBufVerts + (key.slotIndex * gk_spriteBatchSlotVertsCnt);
 
     verts[0] = (0.0f - writeData.origin.x) * writeData.scale.x;
     verts[1] = (0.0f - writeData.origin.y) * writeData.scale.y;
@@ -483,8 +473,8 @@ void clear_sprite_batch_slot(Renderer &renderer, const SpriteBatchSlotKey &key)
     const RenderLayer &layer = renderer.layers[key.layerIndex];
     SpriteBatch &batch = layer.spriteBatches[key.batchIndex];
 
-    float *const verts = batch.quadBufVerts + (key.slotIndex * gk_spriteBatchSlotVertsSize);
-    memset(verts, 0, gk_spriteBatchSlotVertsSize * sizeof(verts[0]));
+    float *const verts = batch.quadBufVerts + (key.slotIndex * gk_spriteBatchSlotVertsCnt);
+    memset(verts, 0, gk_spriteBatchSlotVertsSize);
 
     batch.modifiedSlotRange.begin = std::min(batch.modifiedSlotRange.begin, key.slotIndex);
     batch.modifiedSlotRange.end = std::max(batch.modifiedSlotRange.end, key.slotIndex + 1);
@@ -515,8 +505,8 @@ void submit_sprite_batch_slots(Renderer &renderer)
             glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
             glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
 
-            const int offs = (gk_spriteBatchSlotVertsSize)*batch.modifiedSlotRange.begin * sizeof(float);
-            const int size = (gk_spriteBatchSlotVertsSize) * (batch.modifiedSlotRange.end - batch.modifiedSlotRange.begin) * sizeof(float);
+            const int offs = gk_spriteBatchSlotVertsSize * batch.modifiedSlotRange.begin;
+            const int size = gk_spriteBatchSlotVertsSize * (batch.modifiedSlotRange.end - batch.modifiedSlotRange.begin);
             glBufferSubData(GL_ARRAY_BUFFER, offs, size, batch.quadBufVerts);
 
             // Reset the modified slot range for next time.
@@ -544,7 +534,7 @@ CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, c
     batch.fontID = fontID;
     batch.pos = pos;
     batch.rot = 0.0f;
-    batch.blend = Color::make_white();
+    batch.blend = gk_white;
 
     return {
         .layerIndex = layerIndex,
@@ -559,7 +549,7 @@ void deactivate_char_batch(Renderer &renderer, const CharBatchKey &key)
     clear_char_batch(renderer, key);
 }
 
-void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char *const text, const FontHorAlign horAlign, const FontVerAlign verAlign, const AssetGroupManager &assetGroupManager)
+void write_to_char_batch(Renderer &renderer, cc::MemArena &tempMemArena, const CharBatchKey &key, const char *const text, const FontHorAlign horAlign, const FontVerAlign verAlign, const AssetGroupManager &assetGroupManager)
 {
     RenderLayer &layer = renderer.layers[key.layerIndex];
     CharBatch &batch = layer.charBatches[key.batchIndex];
@@ -570,10 +560,10 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
     const cc::FontDisplayInfo &fontDisplayInfo = assetGroupManager.get_font_display_info(batch.fontID);
 
     // Determine the positions of text characters based on font information, alongside the overall dimensions of the text to be used when applying alignment.
-    const auto charDrawPositions = cc::push_to_mem_arena<cc::Vec2D>(g_tempMemArena, batch.slotCnt);
+    const auto charDrawPositions = cc::push_to_mem_arena<cc::Vec2D>(tempMemArena, batch.slotCnt);
     cc::Vec2D charDrawPosPen = {};
 
-    const auto textLineWidths = cc::push_to_mem_arena<int>(g_tempMemArena, batch.slotCnt + 1);
+    const auto textLineWidths = cc::push_to_mem_arena<int>(tempMemArena, batch.slotCnt + 1);
     int textFirstLineMinOffs = 0;
     bool textFirstLineMinOffsUpdated = false;
     int textLastLineMaxHeight = 0;
@@ -655,8 +645,8 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
     clear_char_batch(renderer, key);
 
     // Reserve memory to hold the vertex data for the characters.
-    const int vertsLen = gk_charBatchSlotVertsSize * textLen;
-    const auto verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
+    const int vertsLen = gk_charBatchSlotVertsCnt * textLen;
+    const auto verts = cc::push_to_mem_arena<float>(tempMemArena, vertsLen);
     memset(verts, 0, vertsLen * sizeof(verts[0]));
 
     // Write the vertex data.
@@ -690,7 +680,7 @@ void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char
             static_cast<float>(fontDisplayInfo.chars.srcRects[charIndex].bottom()) / fontDisplayInfo.texSize.y
         };
 
-        float *const slotVerts = verts + (i * gk_charBatchSlotVertsSize);
+        float *const slotVerts = verts + (i * gk_charBatchSlotVertsCnt);
 
         slotVerts[0] = charDrawPos.x;
         slotVerts[1] = charDrawPos.y;
@@ -726,9 +716,5 @@ void clear_char_batch(const Renderer &renderer, const CharBatchKey &key)
 
     glBindVertexArray(batch.quadBufGLIDs.vertArrayGLID);
     glBindBuffer(GL_ARRAY_BUFFER, batch.quadBufGLIDs.vertBufGLID);
-
-    const int vertsLen = (gk_charBatchSlotVertsSize)*batch.slotCnt;
-    const auto verts = cc::push_to_mem_arena<float>(g_tempMemArena, vertsLen);
-    memset(verts, 0, vertsLen * sizeof(verts[0]));
-    glBufferData(GL_ARRAY_BUFFER, vertsLen * sizeof(verts[0]), verts, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, gk_charBatchSlotVertsSize * batch.slotCnt, nullptr, GL_DYNAMIC_DRAW);
 }

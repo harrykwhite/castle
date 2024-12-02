@@ -9,11 +9,11 @@
 
 using AnimationSrcRectBuilder = cc::Rect(*)(const int frameIndex);
 
-enum VanillaAnimationTypeIndex
+enum CoreAnimationTypeIndex
 {
-    PLAYER_ENT_IDLE_VANILLA_ANIM,
+    PLAYER_ENT_IDLE_CORE_ANIM,
 
-    VANILLA_ANIM_TYPE_CNT
+    CORE_ANIM_TYPE_CNT
 };
 
 struct AnimationType
@@ -23,7 +23,7 @@ struct AnimationType
     AssetID texID;
 };
 
-extern AnimationType *g_vanillaAnimTypes; // TEMP: Not sure how we're going to store these yet considering the modding system.
+extern AnimationType *g_coreAnimTypes; // TEMP: Not sure how we're going to store these yet considering the modding system.
 
 // An instance of an animation mapped to a specific type. For example, you might have one of these per enemy.
 // It will be common to change the animation type in this (e.g. when switching from an idle animation to a walking animation).
@@ -36,10 +36,10 @@ struct AnimationInst
     int typeIndex;
 };
 
-void init_vanilla_anim_types();
+void init_core_anim_types(cc::MemArena &permMemArena);
 void anim_inst_tick(AnimationInst &animInst);
 
 inline cc::Rect get_anim_src_rect(const AnimationInst &animInst)
 {
-    return g_vanillaAnimTypes[animInst.typeIndex].srcRectBuilder(animInst.frameIndex);
+    return g_coreAnimTypes[animInst.typeIndex].srcRectBuilder(animInst.frameIndex);
 }

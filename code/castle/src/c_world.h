@@ -68,7 +68,7 @@ struct World
     SpriteBatchSlotKey cursorSBSlotKey;
 };
 
-void init_world(World &world, const AssetGroupManager &assetGroupManager);
+void init_world(World &world, cc::MemArena &permMemArena, const AssetGroupManager &assetGroupManager);
 void clean_world(World &world);
 void world_tick(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager);
 

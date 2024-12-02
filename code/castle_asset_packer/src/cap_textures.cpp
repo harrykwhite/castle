@@ -12,7 +12,7 @@ static const char *const ik_texFilePathEnds[] = {
     "\\textures\\ui\\cursor.png"
 };
 
-static_assert(cc::VANILLA_TEX_CNT == CC_STATIC_ARRAY_LEN(ik_texFilePathEnds));
+static_assert(cc::CORE_TEX_CNT == CC_STATIC_ARRAY_LEN(ik_texFilePathEnds));
 
 bool pack_textures(FILE *const assetFileStream, const char *const assetsDir)
 {

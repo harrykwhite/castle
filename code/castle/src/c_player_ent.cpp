@@ -2,7 +2,7 @@
 
 #include "c_game.h"
 
-static constexpr AssetID ik_texID = make_vanilla_asset_id(cc::PLAYER_ENT_VANILLA_TEX);
+static constexpr AssetID ik_texID = make_core_asset_id(cc::PLAYER_ENT_TEX);
 static constexpr float ik_moveSpd = 2.0f;
 static constexpr cc::Vec2D ik_swordHitboxSize = {26.0f, 26.0f};
 static constexpr int ik_swordHitboxDist = 34;
@@ -27,7 +27,7 @@ static void write_player_ent_render_data(World &world, const AssetGroupManager &
     }
 
     {
-        const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(make_vanilla_asset_id(cc::SWORD_VANILLA_TEX));
+        const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(make_core_asset_id(cc::SWORD_TEX));
 
         const SpriteBatchSlotWriteData writeData = {
             .pos = world.playerEnt.pos,
@@ -51,7 +51,7 @@ void init_player_ent(World &world, const AssetGroupManager &assetGroupManager)
 {
     world.playerEnt.sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_PLAYER_ENT_LAYER, ik_texID);
     world.playerEnt.animInst.frameInterval = 20;
-    world.playerEnt.sword.sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_PLAYER_ENT_LAYER, make_vanilla_asset_id(cc::SWORD_VANILLA_TEX));
+    world.playerEnt.sword.sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_PLAYER_ENT_LAYER, make_core_asset_id(cc::SWORD_TEX));
     world.playerEnt.sword.rotOffs = calc_sword_rot_offs_targ(world.playerEnt.sword);
 }
 

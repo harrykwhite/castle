@@ -6,7 +6,7 @@
 #include <castle_common/cc_debugging.h>
 #include "c_game.h"
 
-const char *const ik_spriteQuadVertShaderSrc = R"(#version 430 core
+static const char *const ik_spriteQuadVertShaderSrc = R"(#version 430 core
 
 layout (location = 0) in vec2 a_vert;
 layout (location = 1) in vec2 a_pos;
@@ -43,7 +43,7 @@ void main()
 }
 )";
 
-const char *const ik_spriteQuadFragShaderSrc = R"(#version 430 core
+static const char *const ik_spriteQuadFragShaderSrc = R"(#version 430 core
 
 in flat int v_texIndex;
 in vec2 v_texCoord;
@@ -60,7 +60,7 @@ void main()
 }
 )";
 
-const char *const ik_charQuadVertShaderSrc = R"(#version 430 core
+static const char *const ik_charQuadVertShaderSrc = R"(#version 430 core
 
 layout (location = 0) in vec2 a_vert;
 layout (location = 1) in vec2 a_texCoord;
@@ -91,7 +91,7 @@ void main()
 }
 )";
 
-const char *const ik_charQuadFragShaderSrc = R"(#version 430 core
+static const char *const ik_charQuadFragShaderSrc = R"(#version 430 core
 
 in vec2 v_texCoord;
 
@@ -130,7 +130,7 @@ static GLID create_shader_prog_from_srcs(const char *const vertShaderSrc, const 
     return progGLID;
 }
 
-static void init_textures_with_fs(Textures &textures, FILE *const fs, const int texCnt)
+static void init_textures_with_fs(Textures &textures, FILE *const fs, cc::MemArena &tempMemArena, const int texCnt)
 {
     assert(texCnt >= 0);
 
@@ -144,7 +144,7 @@ static void init_textures_with_fs(Textures &textures, FILE *const fs, const int 
 
     // Read the sizes and pixel data of textures and finish setting them up.
     const int pxDataBufSize = cc::gk_texChannelCnt * cc::gk_texSizeLimit.x * cc::gk_texSizeLimit.y;
-    const auto pxDataBuf = cc::push_to_mem_arena<unsigned char>(g_tempMemArena, pxDataBufSize); // Working space for temporarily storing the pixel data of each texture.
+    const auto pxDataBuf = cc::push_to_mem_arena<unsigned char>(tempMemArena, pxDataBufSize); // Working space for temporarily storing the pixel data of each texture.
 
     for (int i = 0; i < texCnt; ++i)
     {
@@ -159,7 +159,7 @@ static void init_textures_with_fs(Textures &textures, FILE *const fs, const int 
     }
 }
 
-static void init_fonts_with_fs(Fonts &fonts, FILE *const fs, const int fontCnt)
+static void init_fonts_with_fs(Fonts &fonts, FILE *const fs, cc::MemArena &tempMemArena, const int fontCnt)
 {
     assert(fontCnt >= 0);
 
@@ -173,7 +173,7 @@ static void init_fonts_with_fs(Fonts &fonts, FILE *const fs, const int fontCnt)
 
     // Read the sizes and pixel data of textures and finish setting them up.
     const int pxDataBufSize = cc::gk_texChannelCnt * cc::gk_texSizeLimit.x * cc::gk_texSizeLimit.y;
-    const auto pxDataBuf = cc::push_to_mem_arena<unsigned char>(g_tempMemArena, pxDataBufSize); // Working space for temporarily storing the pixel data of each font texture.
+    const auto pxDataBuf = cc::push_to_mem_arena<unsigned char>(tempMemArena, pxDataBufSize); // Working space for temporarily storing the pixel data of each font texture.
 
     for (int i = 0; i < fontCnt; ++i)
     {
@@ -188,7 +188,7 @@ static void init_fonts_with_fs(Fonts &fonts, FILE *const fs, const int fontCnt)
     }
 }
 
-static void init_sounds_with_fs(Sounds &sounds, FILE *const fs, const int soundCnt)
+static void init_sounds_with_fs(Sounds &sounds, FILE *const fs, cc::MemArena &tempMemArena, const int soundCnt)
 {
     assert(soundCnt >= 0);
 
@@ -204,7 +204,7 @@ static void init_sounds_with_fs(Sounds &sounds, FILE *const fs, const int soundC
         const auto audioInfo = cc::read_from_fs<cc::AudioInfo>(fs);
 
         const int sampleCnt = audioInfo.sampleCntPerChannel * audioInfo.channelCnt;
-        const auto sampleData = cc::push_to_mem_arena<cc::AudioSample>(g_tempMemArena, sampleCnt);
+        const auto sampleData = cc::push_to_mem_arena<cc::AudioSample>(tempMemArena, sampleCnt);
         const int sampleDataSize = sampleCnt * sizeof(cc::AudioSample);
 
         fread(sampleData, sizeof(*sampleData), sampleCnt, fs);
@@ -247,12 +247,14 @@ bool load_shader_progs(ShaderProgs &progs)
     progs.spriteQuadProjUniLoc = glGetUniformLocation(progs.spriteQuadGLID, "u_proj");
     progs.spriteQuadViewUniLoc = glGetUniformLocation(progs.spriteQuadGLID, "u_view");
     progs.spriteQuadTexturesUniLoc = glGetUniformLocation(progs.spriteQuadGLID, "u_textures");
-    
+
     // Load the character quad shader program.
     progs.charQuadGLID = create_shader_prog_from_srcs(ik_charQuadVertShaderSrc, ik_charQuadFragShaderSrc);
 
     if (!progs.charQuadGLID)
     {
+        glDeleteProgram(progs.spriteQuadGLID);
+        progs = {};
         return false;
     }
 
@@ -273,10 +275,10 @@ void clean_shader_progs(ShaderProgs &progs)
     progs = {};
 }
 
-bool AssetGroupManager::init()
+bool AssetGroupManager::init(cc::MemArena &permMemArena, cc::MemArena &tempMemArena)
 {
-    m_groups = cc::push_to_mem_arena<AssetGroup>(g_permMemArena, k_groupLimit);
-    return init_vanilla_group();
+    m_groups = cc::push_to_mem_arena<AssetGroup>(permMemArena, k_groupLimit);
+    return init_core_group(tempMemArena);
 }
 
 void AssetGroupManager::clean()
@@ -290,7 +292,7 @@ void AssetGroupManager::clean()
     }
 }
 
-bool AssetGroupManager::init_vanilla_group()
+bool AssetGroupManager::init_core_group(cc::MemArena &tempMemArena)
 {
     assert(!m_groupVersions[0]);
 
@@ -310,15 +312,15 @@ bool AssetGroupManager::init_vanilla_group()
     m_groups[0].musicCnt = cc::read_from_fs<int>(fs);
 
     // Load asset data.
-    init_textures_with_fs(m_groups[0].textures, fs, m_groups[0].texCnt);
-    init_fonts_with_fs(m_groups[0].fonts, fs, m_groups[0].fontCnt);
-    init_sounds_with_fs(m_groups[0].sounds, fs, m_groups[0].soundCnt);
+    init_textures_with_fs(m_groups[0].textures, fs, tempMemArena, m_groups[0].texCnt);
+    init_fonts_with_fs(m_groups[0].fonts, fs, tempMemArena, m_groups[0].fontCnt);
+    init_sounds_with_fs(m_groups[0].sounds, fs, tempMemArena, m_groups[0].soundCnt);
     init_music_with_fs(m_groups[0].music, fs, m_groups[0].musicCnt);
 
     // Update the group version.
     ++m_groupVersions[0];
 
-    // Mark the vanilla group as active.
+    // Mark the core group as active.
     activate_bit(m_groupActivity, 0);
 
     // Close the file stream.

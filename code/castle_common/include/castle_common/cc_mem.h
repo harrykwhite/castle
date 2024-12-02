@@ -53,7 +53,8 @@ T *push_to_mem_arena(MemArena &arena, const int cnt = 1)
 inline void clear_mem_arena(MemArena &arena)
 {
     assert(arena.buf);
-    //memset(arena.buf, 0, arena.size);
+
+    memset(arena.buf, 0, arena.offs);
     arena.offs = 0;
 }
 

@@ -20,7 +20,7 @@ static constexpr FontPackingInfo ik_fontPackingInfos[] = {
     {"\\fonts\\eb_garamond.ttf", 72}
 };
 
-static_assert(cc::VANILLA_FONT_CNT == CC_STATIC_ARRAY_LEN(ik_fontPackingInfos));
+static_assert(cc::CORE_FONT_CNT == CC_STATIC_ARRAY_LEN(ik_fontPackingInfos));
 
 struct FontDisplayInfoWithTexPixels
 {

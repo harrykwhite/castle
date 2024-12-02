@@ -15,42 +15,42 @@ constexpr int gk_fontCharRangeSize = 95;
 
 using AudioSample = short;
 
-enum VanillaTexIndex
+enum CoreTexIndex
 {
-    PIXEL_VANILLA_TEX,
-    PLAYER_ENT_VANILLA_TEX,
-    ENEMY_ENT_VANILLA_TEX,
-    SWORD_VANILLA_TEX,
-    DIRT_TILE_VANILLA_TEX,
-    STONE_TILE_VANILLA_TEX,
-    INV_SLOT_VANILLA_TEX,
-    CURSOR_VANILLA_TEX,
+    PIXEL_TEX,
+    PLAYER_ENT_TEX,
+    ENEMY_ENT_TEX,
+    SWORD_TEX,
+    DIRT_TILE_TEX,
+    STONE_TILE_TEX,
+    INV_SLOT_TEX,
+    CURSOR_TEX,
 
-    VANILLA_TEX_CNT
+    CORE_TEX_CNT
 };
 
-enum VanillaFontIndex
+enum CoreFontIndex
 {
-    EB_GARAMOND_18_VANILLA_FONT,
-    EB_GARAMOND_24_VANILLA_FONT,
-    EB_GARAMOND_36_VANILLA_FONT,
-    EB_GARAMOND_72_VANILLA_FONT,
+    EB_GARAMOND_18_FONT,
+    EB_GARAMOND_24_FONT,
+    EB_GARAMOND_36_FONT,
+    EB_GARAMOND_72_FONT,
 
-    VANILLA_FONT_CNT
+    CORE_FONT_CNT
 };
 
-enum VanillaSoundIndex
+enum CoreSoundIndex
 {
-    BLOOP_VANILLA_SOUND,
+    BLOOP_SOUND,
 
-    VANILLA_SOUND_CNT
+    CORE_SOUND_CNT
 };
 
-enum VanillaMusicIndex
+enum CoreMusicIndex
 {
-    BEAT_VANILLA_MUSIC,
+    BEAT_MUSIC,
 
-    VANILLA_MUSIC_CNT
+    CORE_MUSIC_CNT
 };
 
 struct FontCharsDisplayInfo

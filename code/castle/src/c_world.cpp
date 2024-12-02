@@ -40,7 +40,7 @@ static RenderLayerInitInfo render_layer_factory(const int index)
 
 static void write_cursor_render_data(World &world, const InputManager &inputManager, const AssetGroupManager &assetGroupManager)
 {
-    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(make_vanilla_asset_id(cc::CURSOR_VANILLA_TEX));
+    const cc::Vec2DInt texSize = assetGroupManager.get_tex_size(make_core_asset_id(cc::CURSOR_TEX));
 
     const SpriteBatchSlotWriteData writeData = {
         .pos = inputManager.get_mouse_pos(),
@@ -54,9 +54,9 @@ static void write_cursor_render_data(World &world, const InputManager &inputMana
     write_to_sprite_batch_slot(world.renderer, world.cursorSBSlotKey, writeData, assetGroupManager);
 }
 
-void init_world(World &world, const AssetGroupManager &assetGroupManager)
+void init_world(World &world, cc::MemArena &permMemArena, const AssetGroupManager &assetGroupManager)
 {
-    init_renderer(world.renderer, WORLD_LAYER_CNT, WORLD_HITBOX_LAYER + 1, render_layer_factory);
+    init_renderer(world.renderer, permMemArena, WORLD_LAYER_CNT, WORLD_HITBOX_LAYER + 1, render_layer_factory);
 
     init_player_ent(world, assetGroupManager);
 
@@ -65,14 +65,14 @@ void init_world(World &world, const AssetGroupManager &assetGroupManager)
 
     for (int i = 0; i < gk_hitboxLimit; ++i)
     {
-        world.hitboxSBSlotKeys[i] = take_any_sprite_batch_slot(world.renderer, WORLD_HITBOX_LAYER, make_vanilla_asset_id(cc::PIXEL_VANILLA_TEX));
+        world.hitboxSBSlotKeys[i] = take_any_sprite_batch_slot(world.renderer, WORLD_HITBOX_LAYER, make_core_asset_id(cc::PIXEL_TEX));
     }
 
     cc::RectFloat hitboxes[gk_hitboxLimit];
     SpriteBatchSlotKey hitboxSBSlotKeys[gk_hitboxLimit];
     StaticBitset<gk_hitboxLimit> hitboxActivity;
 
-    world.cursorSBSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_CURSOR_LAYER, make_vanilla_asset_id(cc::CURSOR_VANILLA_TEX));
+    world.cursorSBSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_CURSOR_LAYER, make_core_asset_id(cc::CURSOR_TEX));
 }
 
 void clean_world(World &world)

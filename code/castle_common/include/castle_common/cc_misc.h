@@ -5,11 +5,4 @@
 namespace cc
 {
 
-struct Version
-{
-    int major;
-    int minor;
-    int patch;
-};
-
 }

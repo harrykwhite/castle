@@ -154,7 +154,13 @@ static GamepadState create_gamepad_state()
     return state;
 }
 
-InputState InputState::make(GLFWwindow *const glfwWindow, const int mouseScroll)
+void InputManager::refresh_states(GLFWwindow *const glfwWindow, const int mouseScroll)
+{
+    m_stateLast = m_state;
+    m_state = make_input_state(glfwWindow, mouseScroll);
+}
+
+InputState make_input_state(GLFWwindow *const glfwWindow, const int mouseScroll)
 {
     InputState state;
     state.keysDownBits = get_keys_down_bits(glfwWindow);
@@ -163,10 +169,4 @@ InputState InputState::make(GLFWwindow *const glfwWindow, const int mouseScroll)
     state.mouseScroll = mouseScroll;
     state.gamepadState = create_gamepad_state();
     return state;
-}
-
-void InputManager::refresh_states(GLFWwindow *const glfwWindow, const int mouseScroll)
-{
-    m_stateLast = m_state;
-    m_state = InputState::make(glfwWindow, mouseScroll);
 }

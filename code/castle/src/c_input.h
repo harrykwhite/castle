@@ -143,8 +143,6 @@ struct InputState
     int mouseScroll;
 
     GamepadState gamepadState;
-
-    static InputState make(GLFWwindow *const glfwWindow, const int mouseScroll);
 };
 
 class InputManager
@@ -230,3 +228,5 @@ private:
     InputState m_state;
     InputState m_stateLast;
 };
+
+InputState make_input_state(GLFWwindow *const glfwWindow, const int mouseScroll);

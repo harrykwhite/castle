@@ -56,10 +56,10 @@ class MusicManager
 public:
     void clean();
 
-    void refresh_src_bufs(const AssetGroupManager &assetGroupManager) const;
+    void refresh_src_bufs(cc::MemArena &tempMemArena, const AssetGroupManager &assetGroupManager) const;
     MusicSrcID add_src(const AssetID musicID, const AssetGroupManager &assetGroupManager);
     void remove_src(const MusicSrcID srcID);
-    void play_src(const MusicSrcID id, const AssetGroupManager &assetGroupManager);
+    void play_src(cc::MemArena &tempMemArena, const MusicSrcID id, const AssetGroupManager &assetGroupManager);
 
 private:
     static constexpr int k_srcLimit = 16;

@@ -19,7 +19,7 @@ struct MainMenu
     CharBatchKey startTextCBKey;
 };
 
-void init_main_menu(MainMenu &menu, const AssetGroupManager &assetGroupManager);
+void init_main_menu(MainMenu &menu, cc::MemArena &permMemArena, cc::MemArena &tempMemArena, const AssetGroupManager &assetGroupManager);
 void clean_main_menu(MainMenu &menu);
 void main_menu_tick(MainMenu &menu, bool &goToWorld, const InputManager &inputManager);
 void main_menu_on_window_resize(MainMenu &menu);

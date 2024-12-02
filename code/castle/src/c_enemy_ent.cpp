@@ -1,6 +1,6 @@
 #include "c_world.h"
 
-constexpr AssetID ik_enemyEntTexID = make_vanilla_asset_id(cc::ENEMY_ENT_VANILLA_TEX); // TEMP: This will depend on enemy type.
+constexpr AssetID ik_enemyEntTexID = make_core_asset_id(cc::ENEMY_ENT_TEX); // TEMP: This will depend on enemy type.
 
 static void write_enemy_ent_render_data(World &world, const int entIndex, const AssetGroupManager &assetGroupManager)
 {

@@ -2,11 +2,11 @@
 
 #include "c_game.h"
 
-static void load_music_buf_data(const ALID bufALID, const MusicSrc &src, const AssetGroupManager &assetGroupManager)
+static void load_music_buf_data(cc::MemArena &tempMemArena, const ALID bufALID, const MusicSrc &src, const AssetGroupManager &assetGroupManager)
 {
     assert(bufALID);
 
-    const auto buf = cc::push_to_mem_arena<cc::AudioSample>(g_tempMemArena, MusicSrc::k_bufSampleCnt);
+    const auto buf = cc::push_to_mem_arena<cc::AudioSample>(tempMemArena, MusicSrc::k_bufSampleCnt);
     const int bytesRead = fread(buf, 1, MusicSrc::k_bufSize, src.fs);
 
     // TODO: Handle read failure.
@@ -130,7 +130,7 @@ void MusicManager::clean()
     *this = {};
 }
 
-void MusicManager::refresh_src_bufs(const AssetGroupManager &assetGroupManager) const
+void MusicManager::refresh_src_bufs(cc::MemArena &tempMemArena, const AssetGroupManager &assetGroupManager) const
 {
     for (int i = 0; i < k_srcLimit; ++i)
     {
@@ -150,7 +150,7 @@ void MusicManager::refresh_src_bufs(const AssetGroupManager &assetGroupManager) 
             ALID bufALID;
             alSourceUnqueueBuffers(src.alID, 1, &bufALID);
 
-            load_music_buf_data(bufALID, src, assetGroupManager);
+            load_music_buf_data(tempMemArena, bufALID, src, assetGroupManager);
 
             alSourceQueueBuffers(src.alID, 1, &bufALID);
 
@@ -189,7 +189,7 @@ void MusicManager::remove_src(const MusicSrcID srcID)
     deactivate_bit(m_activity, srcID.index);
 }
 
-void MusicManager::play_src(const MusicSrcID id, const AssetGroupManager &assetGroupManager)
+void MusicManager::play_src(cc::MemArena &tempMemArena, const MusicSrcID id, const AssetGroupManager &assetGroupManager)
 {
     assert(id.index >= 0 && id.index < k_srcLimit);
     assert(m_versions[id.index] == id.version);
@@ -203,7 +203,7 @@ void MusicManager::play_src(const MusicSrcID id, const AssetGroupManager &assetG
 
     for (int i = 0; i < MusicSrc::k_bufCnt; ++i)
     {
-        load_music_buf_data(src.bufALIDs[i], src, assetGroupManager);
+        load_music_buf_data(tempMemArena, src.bufALIDs[i], src, assetGroupManager);
     }
 
     alSourceQueueBuffers(src.alID, MusicSrc::k_bufCnt, src.bufALIDs);

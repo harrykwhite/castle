@@ -5,13 +5,13 @@ static const char *const ik_soundFilePathEnds[] = {
     "\\sounds\\bloop.wav"
 };
 
-static_assert(cc::VANILLA_SOUND_CNT == CC_STATIC_ARRAY_LEN(ik_soundFilePathEnds));
+static_assert(cc::CORE_SOUND_CNT == CC_STATIC_ARRAY_LEN(ik_soundFilePathEnds));
 
 static const char *const ik_musicFilePathEnds[] = {
     "\\music\\beat.wav"
 };
 
-static_assert(cc::VANILLA_MUSIC_CNT == CC_STATIC_ARRAY_LEN(ik_musicFilePathEnds));
+static_assert(cc::CORE_MUSIC_CNT == CC_STATIC_ARRAY_LEN(ik_musicFilePathEnds));
 
 static bool load_audio_file_and_write_data(const char *const filePath, FILE *const infoFS, FILE *const samplesFS)
 {

@@ -7,12 +7,13 @@
 
 constexpr int gk_texUnitLimitCap = 32;
 
-constexpr int gk_spriteBatchSlotVertsSize = gk_spriteQuadShaderProgVertCnt * 4;
-constexpr int gk_charBatchSlotVertsSize = gk_charQuadShaderProgVertCnt * 4;
+constexpr int gk_spriteBatchSlotVertsCnt = gk_spriteQuadShaderProgVertCnt * 4;
+constexpr int gk_spriteBatchSlotVertsSize = sizeof(float) * gk_spriteBatchSlotVertsCnt;
+
+constexpr int gk_charBatchSlotVertsCnt = gk_charQuadShaderProgVertCnt * 4;
+constexpr int gk_charBatchSlotVertsSize = sizeof(float) * gk_charBatchSlotVertsCnt;
 
 using TexUnit = char;
-
-extern TexUnit g_texUnitLimit;
 
 enum FontHorAlign
 {
@@ -31,16 +32,16 @@ enum FontVerAlign
 struct Color
 {
     float r, g, b, a;
-
-    static constexpr Color make_white() { return {1.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr Color make_black() { return {0.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr Color make_red() { return {1.0f, 0.0f, 0.0f, 1.0f}; }
-    static constexpr Color make_green() { return {0.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr Color make_blue() { return {0.0f, 0.0f, 1.0f, 1.0f}; }
-    static constexpr Color make_yellow() { return {1.0f, 1.0f, 0.0f, 1.0f}; }
-    static constexpr Color make_cyan() { return {0.0f, 1.0f, 1.0f, 1.0f}; }
-    static constexpr Color make_magenta() { return {1.0f, 0.0f, 1.0f, 1.0f}; }
 };
+
+constexpr Color gk_white = {1.0f, 1.0f, 1.0f, 1.0f};
+constexpr Color gk_black = {0.0f, 0.0f, 0.0f, 1.0f};
+constexpr Color gk_red = {1.0f, 0.0f, 0.0f, 1.0f};
+constexpr Color gk_green = {0.0f, 1.0f, 0.0f, 1.0f};
+constexpr Color gk_blue = {0.0f, 0.0f, 1.0f, 1.0f};
+constexpr Color gk_yellow = {1.0f, 1.0f, 0.0f, 1.0f};
+constexpr Color gk_cyan = {0.0f, 1.0f, 1.0f, 1.0f};
+constexpr Color gk_magenta = {1.0f, 0.0f, 1.0f, 1.0f};
 
 struct QuadBufGLIDs
 {
@@ -98,6 +99,8 @@ struct SpriteBatchSlotWriteData
 
 struct CharBatch
 {
+    static constexpr int sk_slotLimit = 1024;
+
     QuadBufGLIDs quadBufGLIDs;
 
     int slotCnt;
@@ -120,6 +123,8 @@ struct CharBatchKey
 // Note however that the character batches in a layer are always drawn after (and therefore in front of) the sprite batches.
 struct RenderLayer
 {
+    static constexpr int sk_spriteBatchSlotLimit = 2048;
+
     SpriteBatch *spriteBatches;
     int spriteBatchCnt;
     int spriteBatchSlotCnt; // All sprite batches in the same layer have the same slot count.
@@ -137,7 +142,7 @@ struct RenderLayerInitInfo
     int charBatchCnt;
 };
 
-using RenderLayerInitInfoFactory = RenderLayerInitInfo (*)(const int index);
+using RenderLayerInitInfoFactory = RenderLayerInitInfo(*)(const int index);
 
 struct Renderer
 {
@@ -147,12 +152,12 @@ struct Renderer
     RenderLayer *layers;
 };
 
-void init_tex_unit_limit();
+void init_rendering_internals();
 
 QuadBufGLIDs make_quad_buf(const int quadCnt, const bool isSprite);
 void clean_quad_buf(QuadBufGLIDs &glIDs);
 
-void init_renderer(Renderer &renderer, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory);
+void init_renderer(Renderer &renderer, cc::MemArena &permMemArena, const int layerCnt, const int camLayerCnt, const RenderLayerInitInfoFactory layerInitInfoFactory);
 void clean_renderer(Renderer &renderer);
 
 void render(const Renderer &renderer, const Color &bgColor, const AssetGroupManager &assetGroupManager, const ShaderProgs &shaderProgs, const Camera *const cam);
@@ -165,5 +170,5 @@ void submit_sprite_batch_slots(Renderer &renderer);
 
 CharBatchKey activate_any_char_batch(Renderer &renderer, const int layerIndex, const int slotCnt, const AssetID fontID, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager);
 void deactivate_char_batch(Renderer &renderer, const CharBatchKey &key);
-void write_to_char_batch(Renderer &renderer, const CharBatchKey &key, const char *const text, const FontHorAlign horAlign, const FontVerAlign verAlign, const AssetGroupManager &assetGroupManager);
+void write_to_char_batch(Renderer &renderer, cc::MemArena &tempMemArena, const CharBatchKey &key, const char *const text, const FontHorAlign horAlign, const FontVerAlign verAlign, const AssetGroupManager &assetGroupManager);
 void clear_char_batch(const Renderer &renderer, const CharBatchKey &key);
