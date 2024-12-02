@@ -52,6 +52,13 @@ struct EnemyEnt
     int hp;
 };
 
+struct Hitbox
+{
+    cc::RectFloat rect;
+    cc::Vec2D force; // Generally used for knockback.
+    SpriteBatchSlotKey sbSlotKey; // For debug display.
+};
+
 struct World
 {
     Renderer renderer;
@@ -62,8 +69,7 @@ struct World
     EnemyEnt enemyEnts[gk_enemyEntLimit];
     StaticBitset<gk_enemyEntLimit> enemyEntActivity;
 
-    cc::RectFloat hitboxes[gk_hitboxLimit];
-    SpriteBatchSlotKey hitboxSBSlotKeys[gk_hitboxLimit];
+    Hitbox hitboxes[gk_hitboxLimit];
     StaticBitset<gk_hitboxLimit> hitboxActivity;
 
     SpriteBatchSlotKey cursorSBSlotKey;
@@ -78,7 +84,7 @@ void player_ent_tick(World &world, SoundManager &soundManager, const InputManage
 
 int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &assetGroupManager);
 void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &assetGroupManager);
-void damage_enemy_ent(World &world, const int entIndex, const int dmg);
+void hurt_enemy_ent(World &world, const int entIndex, const int dmg, const cc::Vec2D force);
 cc::RectFloat make_enemy_ent_collider(EnemyEnt &enemyEnt, const AssetGroupManager &assetGroupManager);
 
-int add_hitbox(World &world, const cc::RectFloat hitbox);
+int add_hitbox(World &world, const cc::RectFloat rect, const cc::Vec2D force);

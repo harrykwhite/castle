@@ -34,7 +34,7 @@ int spawn_enemy_ent(World &world, const cc::Vec2D pos, const AssetGroupManager &
         ent = {
             .sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_ENEMY_ENT_LAYER, ik_enemyEntTexID),
             .pos = pos,
-            .hp = 3
+            .hp = 8
         };
     }
 
@@ -48,7 +48,7 @@ void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &a
     EnemyEnt &ent = world.enemyEnts[entIndex];
 
     ent.pos += ent.vel;
-    ent.vel *= 0.9f;
+    ent.vel *= 0.7f;
 
     // Write render data.
     {
@@ -67,13 +67,14 @@ void enemy_ent_tick(World &world, const int entIndex, const AssetGroupManager &a
     }
 }
 
-void damage_enemy_ent(World &world, const int entIndex, const int dmg)
+void hurt_enemy_ent(World &world, const int entIndex, const int dmg, const cc::Vec2D force)
 {
     assert(is_bit_active(world.enemyEntActivity, entIndex));
 
     EnemyEnt &ent = world.enemyEnts[entIndex];
 
     ent.hp -= dmg;
+    ent.vel += force; // Applies knockback.
 
     // Handle entity death.
     if (ent.hp <= 0)

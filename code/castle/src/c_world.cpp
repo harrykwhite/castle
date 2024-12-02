@@ -65,7 +65,7 @@ void init_world(World &world, MusicManager &musicManager, cc::MemArena &permMemA
 
     for (int i = 0; i < gk_hitboxLimit; ++i)
     {
-        world.hitboxSBSlotKeys[i] = take_any_sprite_batch_slot(world.renderer, WORLD_HITBOX_LAYER, make_core_asset_id(cc::PIXEL_TEX));
+        world.hitboxes[i].sbSlotKey = take_any_sprite_batch_slot(world.renderer, WORLD_HITBOX_LAYER, make_core_asset_id(cc::PIXEL_TEX));
     }
 
     cc::RectFloat hitboxes[gk_hitboxLimit];
@@ -94,7 +94,7 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
             continue;
         }
 
-        clear_sprite_batch_slot(world.renderer, world.hitboxSBSlotKeys[i]);
+        clear_sprite_batch_slot(world.renderer, world.hitboxes[i].sbSlotKey);
         deactivate_bit(world.hitboxActivity, i);
     }
 
@@ -120,7 +120,7 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
             continue;
         }
 
-        const cc::RectFloat &hitbox = world.hitboxes[i];
+        const Hitbox &hitbox = world.hitboxes[i];
 
         // Check all enemies for a collision.
         for (int j = 0; j < gk_enemyEntLimit; ++j)
@@ -133,23 +133,23 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
             EnemyEnt &enemyEnt = world.enemyEnts[j];
             const cc::RectFloat enemyEntCollider = make_enemy_ent_collider(enemyEnt, assetGroupManager);
 
-            if (cc::do_rects_intersect(hitbox, enemyEntCollider))
+            if (cc::do_rects_intersect(hitbox.rect, enemyEntCollider))
             {
-                damage_enemy_ent(world, j, 1);
+                hurt_enemy_ent(world, j, 1, hitbox.force);
             }
         }
 
         // Write hitbox render data.
         const SpriteBatchSlotWriteData writeData = {
-            .pos = hitbox.pos,
+            .pos = hitbox.rect.pos,
             .srcRect = {0, 0, 1, 1},
             .origin = {},
             .rot = 0.0f,
-            .scale = hitbox.size,
+            .scale = hitbox.rect.size,
             .alpha = 1.0f
         };
 
-        write_to_sprite_batch_slot(world.renderer, world.hitboxSBSlotKeys[i], writeData, assetGroupManager);
+        write_to_sprite_batch_slot(world.renderer, world.hitboxes[i].sbSlotKey, writeData, assetGroupManager);
     }
 
     // Write cursor render data.
@@ -167,13 +167,14 @@ void world_tick(World &world, SoundManager &soundManager, const InputManager &in
     }
 }
 
-int add_hitbox(World &world, const cc::RectFloat hitbox)
+int add_hitbox(World &world, const cc::RectFloat rect, const cc::Vec2D force)
 {
     const int index = first_inactive_bit_index(world.hitboxActivity);
 
     if (index != -1)
     {
-        world.hitboxes[index] = hitbox;
+        world.hitboxes[index].rect = rect;
+        world.hitboxes[index].force = force;
         activate_bit(world.hitboxActivity, index);
     }
 

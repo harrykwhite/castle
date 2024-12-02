@@ -266,7 +266,7 @@ inline float calc_dir(const Vec2D src, const Vec2D dest)
     return atan2f(src.y - dest.y, dest.x - src.x);
 }
 
-inline Vec2D make_dir_vec_2d(const float dir, const float mag)
+inline Vec2D make_dir_vec_2d(const float dir, const float mag = 1.0f)
 {
     return Vec2D(cosf(dir), -sinf(dir)) * mag;
 }

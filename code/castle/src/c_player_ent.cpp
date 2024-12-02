@@ -6,6 +6,7 @@ static constexpr AssetID ik_texID = make_core_asset_id(cc::PLAYER_ENT_TEX);
 static constexpr float ik_moveSpd = 2.0f;
 static constexpr cc::Vec2D ik_swordHitboxSize = {26.0f, 26.0f};
 static constexpr int ik_swordHitboxDist = 34;
+static constexpr float ik_swordHitboxStrength = 11.0f;
 static constexpr float ik_swordRotOffsLimit = cc::degs_to_rads(120.0f);
 static constexpr float ik_swordRotOffsLerpFactor = 0.3f;
 
@@ -78,14 +79,16 @@ void player_ent_tick(World &world, SoundManager &soundManager, const InputManage
 
         soundManager.add_and_play_src(make_core_asset_id(cc::SWING_SOUND), assetGroupManager);
 
-        const cc::Vec2D hitboxCenterPos = ent.pos + cc::make_dir_vec_2d(ent.rot, ik_swordHitboxDist);
+        const cc::Vec2D forwards = cc::make_dir_vec_2d(ent.rot);
 
-        const cc::RectFloat hitbox = {
-            hitboxCenterPos - (ik_swordHitboxSize / 2.0f),
+        const cc::Vec2D hitboxRectCenterPos = ent.pos + (forwards * ik_swordHitboxDist);
+
+        const cc::RectFloat hitboxRect = {
+            hitboxRectCenterPos - (ik_swordHitboxSize / 2.0f),
             ik_swordHitboxSize
         };
 
-        add_hitbox(world, hitbox);
+        add_hitbox(world, hitboxRect, forwards * ik_swordHitboxStrength);
     }
 
     ent.sword.rotOffs = cc::lerp(ent.sword.rotOffs, calc_sword_rot_offs_targ(ent.sword), ik_swordRotOffsLerpFactor);
